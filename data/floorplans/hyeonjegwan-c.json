@@ -1,0 +1,657 @@
+{
+ "building": "현제관 C동",
+ "campus_no": "14",
+ "role": "기숙사",
+ "canvas": {
+  "w": 1110,
+  "h": 628
+ },
+ "kinds": {
+  "dorm_room": "기숙사 호실 (일탈이 일어나는 유일한 장소)",
+  "corridor": "통로",
+  "stair": "통로(층 연결)",
+  "entrance": "통로(캠퍼스 연결)",
+  "warden": "사감실 (사감 NPC 거점, 점령 불가)",
+  "facility": "생활 시설 (세면장·샤워실, 특수 기능 없음)",
+  "lounge": "휴게실 (패도 루트 싸움 장소)",
+  "hidden": "숨은 방 (괴담 장소, 발견 전 ???)"
+ },
+ "floors": {
+  "B1": [
+   {
+    "id": "B1-corridor",
+    "label": "복도",
+    "kind": "corridor",
+    "x": 613,
+    "y": 143,
+    "w": 139,
+    "h": 72,
+    "adjacent": [
+     "B1-stair-up",
+     "B1-unknown"
+    ]
+   },
+   {
+    "id": "B1-stair-up",
+    "label": "계단(1층)",
+    "kind": "stair",
+    "x": 768,
+    "y": 143,
+    "w": 125,
+    "h": 72,
+    "to": "1F",
+    "adjacent": [
+     "1F-stair-down",
+     "B1-corridor",
+     "B1-unknown"
+    ]
+   },
+   {
+    "id": "B1-unknown",
+    "label": "???",
+    "kind": "hidden",
+    "x": 174,
+    "y": 231,
+    "w": 719,
+    "h": 299,
+    "note": "정체불명의 지하 공간. 괴담 장소",
+    "adjacent": [
+     "B1-corridor",
+     "B1-stair-up"
+    ],
+    "ghost_site": true
+   }
+  ],
+  "1F": [
+   {
+    "id": "1F-104",
+    "label": "104",
+    "kind": "dorm_room",
+    "x": 174,
+    "y": 12,
+    "w": 143,
+    "h": 203,
+    "adjacent": [
+     "1F-corridor"
+    ],
+    "deviance_site": true
+   },
+   {
+    "id": "1F-105",
+    "label": "105",
+    "kind": "dorm_room",
+    "x": 339,
+    "y": 12,
+    "w": 143,
+    "h": 203,
+    "adjacent": [
+     "1F-corridor"
+    ],
+    "deviance_site": true
+   },
+   {
+    "id": "1F-106",
+    "label": "106",
+    "kind": "dorm_room",
+    "x": 503,
+    "y": 12,
+    "w": 143,
+    "h": 203,
+    "adjacent": [
+     "1F-corridor"
+    ],
+    "deviance_site": true
+   },
+   {
+    "id": "1F-warden",
+    "label": "사감실",
+    "kind": "warden",
+    "x": 662,
+    "y": 12,
+    "w": 90,
+    "h": 203,
+    "adjacent": [
+     "1F-corridor",
+     "1F-stair-down",
+     "1F-stair-up"
+    ]
+   },
+   {
+    "id": "1F-stair-down",
+    "label": "계단(지하실)",
+    "kind": "stair",
+    "x": 768,
+    "y": 72,
+    "w": 125,
+    "h": 72,
+    "to": "B1",
+    "adjacent": [
+     "1F-stair-up",
+     "1F-warden",
+     "B1-stair-up"
+    ]
+   },
+   {
+    "id": "1F-stair-up",
+    "label": "계단(2층)",
+    "kind": "stair",
+    "x": 768,
+    "y": 144,
+    "w": 125,
+    "h": 71,
+    "to": "2F",
+    "adjacent": [
+     "1F-entrance",
+     "1F-stair-down",
+     "1F-warden",
+     "2F-stair-down"
+    ]
+   },
+   {
+    "id": "1F-corridor",
+    "label": "복도",
+    "kind": "corridor",
+    "x": 174,
+    "y": 231,
+    "w": 578,
+    "h": 114,
+    "adjacent": [
+     "1F-101",
+     "1F-102",
+     "1F-103",
+     "1F-104",
+     "1F-105",
+     "1F-106",
+     "1F-entrance",
+     "1F-warden",
+     "1F-washroom"
+    ]
+   },
+   {
+    "id": "1F-entrance",
+    "label": "입구",
+    "kind": "entrance",
+    "x": 768,
+    "y": 231,
+    "w": 125,
+    "h": 114,
+    "note": "캠퍼스와 연결",
+    "adjacent": [
+     "1F-corridor",
+     "1F-shower",
+     "1F-stair-up"
+    ]
+   },
+   {
+    "id": "1F-103",
+    "label": "103",
+    "kind": "dorm_room",
+    "x": 174,
+    "y": 361,
+    "w": 143,
+    "h": 203,
+    "adjacent": [
+     "1F-corridor"
+    ],
+    "deviance_site": true
+   },
+   {
+    "id": "1F-102",
+    "label": "102",
+    "kind": "dorm_room",
+    "x": 339,
+    "y": 361,
+    "w": 143,
+    "h": 203,
+    "adjacent": [
+     "1F-corridor"
+    ],
+    "deviance_site": true
+   },
+   {
+    "id": "1F-101",
+    "label": "101",
+    "kind": "dorm_room",
+    "x": 503,
+    "y": 361,
+    "w": 143,
+    "h": 203,
+    "adjacent": [
+     "1F-corridor"
+    ],
+    "deviance_site": true
+   },
+   {
+    "id": "1F-washroom",
+    "label": "세면장",
+    "kind": "facility",
+    "x": 662,
+    "y": 361,
+    "w": 90,
+    "h": 246,
+    "adjacent": [
+     "1F-corridor"
+    ]
+   },
+   {
+    "id": "1F-shower",
+    "label": "샤워실",
+    "kind": "facility",
+    "x": 768,
+    "y": 361,
+    "w": 90,
+    "h": 246,
+    "adjacent": [
+     "1F-entrance"
+    ]
+   }
+  ],
+  "2F": [
+   {
+    "id": "2F-204",
+    "label": "204",
+    "kind": "dorm_room",
+    "x": 132,
+    "y": 12,
+    "w": 143,
+    "h": 202,
+    "adjacent": [
+     "2F-corridor"
+    ],
+    "deviance_site": true
+   },
+   {
+    "id": "2F-205",
+    "label": "205",
+    "kind": "dorm_room",
+    "x": 291,
+    "y": 12,
+    "w": 143,
+    "h": 202,
+    "adjacent": [
+     "2F-corridor"
+    ],
+    "deviance_site": true
+   },
+   {
+    "id": "2F-206",
+    "label": "206",
+    "kind": "dorm_room",
+    "x": 450,
+    "y": 12,
+    "w": 143,
+    "h": 202,
+    "adjacent": [
+     "2F-corridor"
+    ],
+    "deviance_site": true
+   },
+   {
+    "id": "2F-207",
+    "label": "207",
+    "kind": "dorm_room",
+    "x": 609,
+    "y": 12,
+    "w": 143,
+    "h": 202,
+    "adjacent": [
+     "2F-corridor",
+     "2F-stair-down",
+     "2F-stair-up"
+    ],
+    "deviance_site": true
+   },
+   {
+    "id": "2F-stair-down",
+    "label": "계단(1층)",
+    "kind": "stair",
+    "x": 768,
+    "y": 72,
+    "w": 125,
+    "h": 72,
+    "to": "1F",
+    "adjacent": [
+     "1F-stair-up",
+     "2F-207",
+     "2F-stair-up"
+    ]
+   },
+   {
+    "id": "2F-stair-up",
+    "label": "계단(3층)",
+    "kind": "stair",
+    "x": 768,
+    "y": 144,
+    "w": 125,
+    "h": 71,
+    "to": "3F",
+    "adjacent": [
+     "2F-207",
+     "2F-lounge",
+     "2F-stair-down",
+     "3F-stair-down"
+    ]
+   },
+   {
+    "id": "2F-corridor",
+    "label": "복도",
+    "kind": "corridor",
+    "x": 132,
+    "y": 231,
+    "w": 620,
+    "h": 114,
+    "adjacent": [
+     "2F-201",
+     "2F-202",
+     "2F-203",
+     "2F-204",
+     "2F-205",
+     "2F-206",
+     "2F-207",
+     "2F-lounge",
+     "2F-washroom"
+    ]
+   },
+   {
+    "id": "2F-lounge",
+    "label": "휴게실",
+    "kind": "lounge",
+    "x": 768,
+    "y": 231,
+    "w": 125,
+    "h": 114,
+    "adjacent": [
+     "2F-corridor",
+     "2F-stair-up"
+    ],
+    "fight_site": true
+   },
+   {
+    "id": "2F-203",
+    "label": "203",
+    "kind": "dorm_room",
+    "x": 132,
+    "y": 356,
+    "w": 143,
+    "h": 203,
+    "adjacent": [
+     "2F-corridor"
+    ],
+    "deviance_site": true
+   },
+   {
+    "id": "2F-202",
+    "label": "202",
+    "kind": "dorm_room",
+    "x": 294,
+    "y": 356,
+    "w": 168,
+    "h": 203,
+    "adjacent": [
+     "2F-corridor"
+    ],
+    "deviance_site": true
+   },
+   {
+    "id": "2F-201",
+    "label": "201",
+    "kind": "dorm_room",
+    "x": 481,
+    "y": 356,
+    "w": 165,
+    "h": 203,
+    "adjacent": [
+     "2F-corridor"
+    ],
+    "deviance_site": true
+   },
+   {
+    "id": "2F-washroom",
+    "label": "세면장",
+    "kind": "facility",
+    "x": 662,
+    "y": 361,
+    "w": 90,
+    "h": 246,
+    "adjacent": [
+     "2F-corridor"
+    ]
+   },
+   {
+    "id": "2F-shower",
+    "label": "샤워실",
+    "kind": "facility",
+    "x": 768,
+    "y": 361,
+    "w": 90,
+    "h": 246,
+    "adjacent": []
+   }
+  ],
+  "3F": [
+   {
+    "id": "3F-304",
+    "label": "304",
+    "kind": "dorm_room",
+    "x": 132,
+    "y": 12,
+    "w": 143,
+    "h": 202,
+    "adjacent": [
+     "3F-corridor"
+    ],
+    "deviance_site": true
+   },
+   {
+    "id": "3F-305",
+    "label": "305",
+    "kind": "dorm_room",
+    "x": 291,
+    "y": 12,
+    "w": 143,
+    "h": 202,
+    "adjacent": [
+     "3F-corridor"
+    ],
+    "deviance_site": true
+   },
+   {
+    "id": "3F-306",
+    "label": "306",
+    "kind": "dorm_room",
+    "x": 450,
+    "y": 12,
+    "w": 143,
+    "h": 202,
+    "adjacent": [
+     "3F-corridor"
+    ],
+    "deviance_site": true
+   },
+   {
+    "id": "3F-307",
+    "label": "307",
+    "kind": "dorm_room",
+    "x": 609,
+    "y": 12,
+    "w": 143,
+    "h": 202,
+    "adjacent": [
+     "3F-corridor",
+     "3F-stair-down",
+     "3F-stair-up"
+    ],
+    "deviance_site": true
+   },
+   {
+    "id": "3F-stair-down",
+    "label": "계단(2층)",
+    "kind": "stair",
+    "x": 768,
+    "y": 72,
+    "w": 125,
+    "h": 72,
+    "to": "2F",
+    "adjacent": [
+     "2F-stair-up",
+     "3F-307",
+     "3F-stair-up"
+    ]
+   },
+   {
+    "id": "3F-stair-up",
+    "label": "계단(4층)",
+    "kind": "stair",
+    "x": 768,
+    "y": 144,
+    "w": 125,
+    "h": 71,
+    "to": "4F",
+    "adjacent": [
+     "3F-307",
+     "3F-lounge",
+     "3F-stair-down",
+     "4F-stair-down"
+    ]
+   },
+   {
+    "id": "3F-corridor",
+    "label": "복도",
+    "kind": "corridor",
+    "x": 132,
+    "y": 231,
+    "w": 620,
+    "h": 114,
+    "adjacent": [
+     "3F-301",
+     "3F-302",
+     "3F-303",
+     "3F-304",
+     "3F-305",
+     "3F-306",
+     "3F-307",
+     "3F-lounge",
+     "3F-washroom"
+    ]
+   },
+   {
+    "id": "3F-lounge",
+    "label": "휴게실",
+    "kind": "lounge",
+    "x": 768,
+    "y": 231,
+    "w": 125,
+    "h": 114,
+    "adjacent": [
+     "3F-corridor",
+     "3F-stair-up"
+    ],
+    "fight_site": true
+   },
+   {
+    "id": "3F-303",
+    "label": "303",
+    "kind": "dorm_room",
+    "x": 132,
+    "y": 356,
+    "w": 143,
+    "h": 203,
+    "adjacent": [
+     "3F-corridor"
+    ],
+    "deviance_site": true
+   },
+   {
+    "id": "3F-302",
+    "label": "302",
+    "kind": "dorm_room",
+    "x": 294,
+    "y": 356,
+    "w": 168,
+    "h": 203,
+    "adjacent": [
+     "3F-corridor"
+    ],
+    "deviance_site": true
+   },
+   {
+    "id": "3F-301",
+    "label": "301",
+    "kind": "dorm_room",
+    "x": 481,
+    "y": 356,
+    "w": 165,
+    "h": 203,
+    "adjacent": [
+     "3F-corridor"
+    ],
+    "deviance_site": true
+   },
+   {
+    "id": "3F-washroom",
+    "label": "세면장",
+    "kind": "facility",
+    "x": 662,
+    "y": 361,
+    "w": 90,
+    "h": 246,
+    "adjacent": [
+     "3F-corridor"
+    ]
+   },
+   {
+    "id": "3F-shower",
+    "label": "샤워실",
+    "kind": "facility",
+    "x": 768,
+    "y": 361,
+    "w": 90,
+    "h": 246,
+    "adjacent": []
+   }
+  ],
+  "4F": [
+   {
+    "id": "4F-corridor",
+    "label": "복도",
+    "kind": "corridor",
+    "x": 613,
+    "y": 143,
+    "w": 139,
+    "h": 72,
+    "adjacent": [
+     "4F-401",
+     "4F-stair-down"
+    ]
+   },
+   {
+    "id": "4F-stair-down",
+    "label": "계단(3층)",
+    "kind": "stair",
+    "x": 768,
+    "y": 143,
+    "w": 125,
+    "h": 72,
+    "to": "3F",
+    "adjacent": [
+     "3F-stair-up",
+     "4F-corridor"
+    ]
+   },
+   {
+    "id": "4F-401",
+    "label": "401",
+    "kind": "dorm_room",
+    "x": 613,
+    "y": 231,
+    "w": 139,
+    "h": 114,
+    "adjacent": [
+     "4F-corridor"
+    ],
+    "deviance_site": true
+   }
+  ]
+ },
+ "note": "타일은 통로(복도·계단·입구)를 통해서만 이어집니다 (룰북 8.1 인접 규칙). 좌표는 1110×628 기준 도면 좌표."
+}
