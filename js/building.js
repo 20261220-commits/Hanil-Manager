@@ -2,6 +2,13 @@
 import { loadJSON, FLOOR_LABEL, KIND_LABEL } from './data.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
+// 받침에 따라 '로'/'으로'를 붙인다 (받침 없음이나 ㄹ 받침이면 '로').
+function withRo(word) {
+  const code = word.charCodeAt(word.length - 1) - 0xac00;
+  const jong = code >= 0 && code < 11172 ? code % 28 : 0;
+  return word + (jong === 0 || jong === 8 ? '로' : '으로');
+}
+
 const LEGEND = ['dorm_room', 'corridor', 'stair', 'entrance', 'warden', 'lounge', 'facility', 'hidden'];
 
 export async function renderBuilding(app, id) {
@@ -66,8 +73,20 @@ export async function renderBuilding(app, id) {
       g.setAttribute('aria-label', t.label);
       g.innerHTML = `<rect x="${t.x}" y="${t.y}" width="${t.w}" height="${t.h}" rx="4"></rect>
         <text x="${t.x + t.w / 2}" y="${t.y + t.h / 2 + 2}" text-anchor="middle">${t.label}</text>
-        ${t.kind === 'dorm_room' || t.kind === 'lounge' ? `<text class="sub" x="${t.x + t.w / 2}" y="${t.y + t.h / 2 + 20}" text-anchor="middle">무소속</text>` : ''}`;
-      const pick = () => { selected = t.id; draw(); };
+        ${t.kind === 'dorm_room' || t.kind === 'lounge' ? `<text class="sub" x="${t.x + t.w / 2}" y="${t.y + t.h / 2 + 20}" text-anchor="middle">무소속</text>` : ''}
+        ${t.kind === 'stair' && t.to ? `<text class="sub" x="${t.x + t.w / 2}" y="${t.y + t.h / 2 + 20}" text-anchor="middle">${floors.indexOf(t.to) > floors.indexOf(floor) ? '▲' : '▼'} 눌러서 이동</text>` : ''}`;
+      if (t.kind === 'stair' && t.to) g.setAttribute('aria-label', `${t.label}: ${withRo(FLOOR_LABEL[t.to] || t.to)} 이동`);
+      // 계단을 누르면 연결된 층으로 올라가거나 내려가고, 도착한 층의 계단을 선택해 둔다.
+      const pick = () => {
+        if (t.kind === 'stair' && t.to && plan.floors[t.to]) {
+          const arrival = plan.floors[t.to].find((s) => s.kind === 'stair' && s.to === floor);
+          floor = t.to;
+          selected = arrival ? arrival.id : null;
+        } else {
+          selected = t.id;
+        }
+        draw();
+      };
       g.addEventListener('click', pick);
       g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
       svg.appendChild(g);
@@ -80,7 +99,7 @@ export async function renderBuilding(app, id) {
       const tiles = plan.floors[floor];
       const rooms = tiles.filter((t) => t.kind === 'dorm_room').length;
       detail.innerHTML = `<h2>${FLOOR_LABEL[floor] || floor}</h2>
-        <p class="note">타일을 누르면 정보가 나옵니다.</p>
+        <p class="note">타일을 누르면 정보가 나옵니다. 계단을 누르면 연결된 층으로 이동합니다.</p>
         <dl class="kv"><dt>타일</dt><dd>${tiles.length}개</dd><dt>호실</dt><dd>${rooms}개</dd></dl>`;
       return;
     }
