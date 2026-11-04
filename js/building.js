@@ -1,5 +1,7 @@
 // 건물 화면: 층별 평면도를 타일로 그린다. 처음에는 1층을 보여 준다.
 import { loadJSON, FLOOR_LABEL, KIND_LABEL } from './data.js';
+import { getState } from './game/state.js';
+import { esc } from './ui.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
 // 받침에 따라 '로'/'으로'를 붙인다 (받침 없음이나 ㄹ 받침이면 '로').
@@ -33,6 +35,8 @@ export async function renderBuilding(app, id) {
   }
 
   const plan = await loadJSON(b.floorplan);
+  // 담임반 학생은 현제관 C동 호실에 산다 (호실 id가 평면도 타일 id와 같다).
+  const residents = (tileId) => (b.id === 'hyeonje-c' ? getState().students.filter((s) => s.room === tileId) : []);
   const floors = Object.keys(plan.floors);
   let floor = floors.includes('1F') ? '1F' : floors[0];
   let selected = null;
@@ -73,7 +77,7 @@ export async function renderBuilding(app, id) {
       g.setAttribute('aria-label', t.label);
       g.innerHTML = `<rect x="${t.x}" y="${t.y}" width="${t.w}" height="${t.h}" rx="4"></rect>
         <text x="${t.x + t.w / 2}" y="${t.y + t.h / 2 + 2}" text-anchor="middle">${t.label}</text>
-        ${t.kind === 'dorm_room' || t.kind === 'lounge' ? `<text class="sub" x="${t.x + t.w / 2}" y="${t.y + t.h / 2 + 20}" text-anchor="middle">무소속</text>` : ''}
+        ${t.kind === 'dorm_room' || t.kind === 'lounge' ? `<text class="sub" x="${t.x + t.w / 2}" y="${t.y + t.h / 2 + 20}" text-anchor="middle">${residents(t.id).length ? `담임반 ${residents(t.id).length}명` : '무소속'}</text>` : ''}
         ${t.kind === 'stair' && t.to ? `<text class="sub" x="${t.x + t.w / 2}" y="${t.y + t.h / 2 + 20}" text-anchor="middle">${floors.indexOf(t.to) > floors.indexOf(floor) ? '▲' : '▼'} 눌러서 이동</text>` : ''}`;
       if (t.kind === 'stair' && t.to) g.setAttribute('aria-label', `${t.label}: ${withRo(FLOOR_LABEL[t.to] || t.to)} 이동`);
       // 계단을 누르면 연결된 층으로 올라가거나 내려가고, 도착한 층의 계단을 선택해 둔다.
@@ -115,10 +119,11 @@ export async function renderBuilding(app, id) {
       <dl class="kv">
         <dt>종류</dt><dd>${plan.kinds[t.kind] || KIND_LABEL[t.kind]}</dd>
         <dt>위치</dt><dd>${FLOOR_LABEL[t.floor] || t.floor}</dd>
-        ${t.kind === 'dorm_room' || t.kind === 'lounge' ? '<dt>지배</dt><dd>무소속</dd>' : ''}
+        ${t.kind === 'dorm_room' || t.kind === 'lounge' ? `<dt>지배</dt><dd>${residents(t.id).length ? '우리 계파 (담임반)' : '무소속'}</dd>` : ''}
         ${flags.length ? `<dt>특징</dt><dd>${flags.join(', ')}</dd>` : ''}
         ${t.note ? `<dt>메모</dt><dd>${t.note}</dd>` : ''}
       </dl>
+      ${residents(t.id).length ? `<h2>사는 학생</h2><div class="chips">${residents(t.id).map((s) => `<a class="chip" href="#s-${s.id}">${esc(s.name)}</a>`).join('')}</div>` : ''}
       <h2>이어진 곳</h2>
       <div class="chips">${links.map((l) =>
         `<button type="button" class="chip" data-go="${l.id}">${l.floor !== t.floor ? (FLOOR_LABEL[l.floor] || l.floor) + ' ' : ''}${l.label}</button>`).join('') || '<span class="note">없음</span>'}</div>`;
