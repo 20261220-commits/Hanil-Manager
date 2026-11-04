@@ -10,10 +10,16 @@ export function stars(value, label) {
   return `<span class="stars" role="img" title="${label ?? ''} 별 ${half / 2}개" aria-label="${label ?? ''} 별 ${half / 2}개"><span class="stars-fill" style="width:${half * 10}%">★★★★★</span>☆☆☆☆☆</span>`;
 }
 
+// 사기: FM처럼 원 안의 화살표. 보통은 오른쪽, 좋을수록 위, 나쁠수록 아래를 향하고
+// 색은 매우 낮음(빨강)에서 매우 높음(초록)까지 7단계로 바뀐다.
 export function moralePill(m) {
   const i = MORALE.indexOf(m);
-  const tone = i <= 1 ? 'bad' : i === 2 ? 'warn' : i >= 4 ? 'good' : 'mid';
-  return `<span class="pill ${tone}">${m}</span>`;
+  // SVG 회전은 시계 방향이 +이므로, 높을수록 음수(위쪽)가 되게 한다.
+  const angle = (i - 3) * 30;
+  return `<span class="mood" title="사기 ${m}"><svg class="mood-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+      <circle cx="8" cy="8" r="8" fill="var(--mood-${i})"></circle>
+      <g transform="rotate(${-angle} 8 8)"><path d="M3.8 8h7M8.2 4.9 11.3 8l-3.1 3.1" fill="none" stroke="var(--mood-arrow)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"></path></g>
+    </svg><span>${m}</span></span>`;
 }
 
 export function needBar(v) {

@@ -11,6 +11,7 @@
   --area-hover: rgba(45, 122, 76, 0.28);
   --area-stroke: #ffffff;
   --good: #2d7a4c; --good-bg: #e3f1e8; --warn: #a86a12; --warn-bg: #f8ecd8; --bad: #b8402c; --bad-bg: #f8e2dd;
+  --mood-0: #c0392b; --mood-1: #d65a2b; --mood-2: #e08a2c; --mood-3: #c4a02a; --mood-4: #8cb23a; --mood-5: #4f9e45; --mood-6: #23894a; --mood-arrow: #ffffff;
   --rare: #3d6fb6; --legend: #9a6a00; --star: #d39a12;
   --luck-1: #d9483b; --luck-2: #e8892c; --luck-3: #e2c12f; --luck-4: #9cc83f; --luck-5: #2f9a55;
 
@@ -34,6 +35,7 @@
     --paper: #12161c; --surface: #1a2029; --ink: #e6e9ee; --muted: #9aa3af; --line: #2c3441;
     --accent: #5cc28a; --accent-ink: #0f1a14; --soft: #222a35; --area-hover: rgba(92, 194, 138, 0.32); --area-stroke: #e6e9ee;
     --good: #6fd29b; --good-bg: #1d3528; --warn: #f0b257; --warn-bg: #3a2c16; --bad: #ff8a73; --bad-bg: #3d211c;
+    --mood-0: #e0533f; --mood-1: #e8703a; --mood-2: #eb9a3c; --mood-3: #d8b744; --mood-4: #a3c851; --mood-5: #67bf5e; --mood-6: #3fae66; --mood-arrow: #12161c;
     --rare: #8bb4ff; --legend: #f2c14e; --star: #f2c14e;
     --t-room: #3a4656; --t-pass: #2a323d; --t-stair: #8a9099; --t-entrance: #2f5a40; --t-warden: #7a5a2e;
     --t-facility: #3d3a48; --t-lounge: #4a5a2a; --t-hidden: #0b0d10; --t-ink: #e6e9ee;
@@ -44,6 +46,7 @@
   --paper: #12161c; --surface: #1a2029; --ink: #e6e9ee; --muted: #9aa3af; --line: #2c3441;
   --accent: #5cc28a; --accent-ink: #0f1a14; --soft: #222a35; --area-hover: rgba(92, 194, 138, 0.32); --area-stroke: #e6e9ee;
     --good: #6fd29b; --good-bg: #1d3528; --warn: #f0b257; --warn-bg: #3a2c16; --bad: #ff8a73; --bad-bg: #3d211c;
+    --mood-0: #e0533f; --mood-1: #e8703a; --mood-2: #eb9a3c; --mood-3: #d8b744; --mood-4: #a3c851; --mood-5: #67bf5e; --mood-6: #3fae66; --mood-arrow: #12161c;
     --rare: #8bb4ff; --legend: #f2c14e; --star: #f2c14e;
   --t-room: #3a4656; --t-pass: #2a323d; --t-stair: #8a9099; --t-entrance: #2f5a40; --t-warden: #7a5a2e;
   --t-facility: #3d3a48; --t-lounge: #4a5a2a; --t-hidden: #0b0d10; --t-ink: #e6e9ee;
@@ -199,3 +202,7 @@ a.chip { text-decoration: none; }
 .talks { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; }
 .talk { display: inline-block; width: 1.4em; text-align: center; }
 .talk.good { color: var(--good); } .talk.bad { color: var(--bad); }
+
+/* 사기 화살표 */
+.mood { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; white-space: nowrap; }
+.mood-icon { flex: none; display: block; }
