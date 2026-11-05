@@ -1,5 +1,5 @@
 // 턴 진행: 주간 행동(AP)과 주말 정산 (룰북 3장, 4.7~4.8, 13장)
-import { getState, save, studentById, nextRng, addMessage, pendingDecisions } from './state.js';
+import { getState, save, studentById, nextRng, addMessage, pendingDecisions, count, checkTitles } from './state.js';
 import { observe, calcCA, needLevel, topNeed } from './students.js';
 import { weekLabel, eventOf, nearExam, isHomecoming } from './calendar.js';
 import { STAT_GROUPS, STAT_LABEL, MORALE } from '../content/stats.js';
@@ -39,7 +39,8 @@ function spend(ap, key) {
   return null;
 }
 
-const done = (msg) => { save(); return { ok: true, msg }; };
+// 행동이 끝날 때마다 칭호 조건을 확인하고 저장한다.
+const done = (msg) => { checkTitles(); save(); return { ok: true, msg }; };
 const fail = (msg) => ({ ok: false, msg });
 
 // ---------- 행동 ----------
@@ -68,6 +69,7 @@ export function doCounsel(id) {
     lowerNeeds(st, amount, need);
     shiftMorale(st, 1);
     st.bond = clamp(st.bond + 5, 0, 100);
+    count('counselOK');
     return done(`${st.name}와 이야기가 잘 통했습니다. 사기가 올랐고 고민(${needName(need)})이 ${amount} 줄었습니다.`);
   }
   st.bond = clamp(st.bond + 1, 0, 100);
@@ -80,6 +82,7 @@ export function doObserve(id) {
   const free = s.turn === 1 && s.freeObservations > 0;
   if (!free) { const err = spend(1); if (err) return fail(err); } else s.freeObservations -= 1;
   observe(nextRng(), st, teacherStat('안목'));
+  if (['-10', '-9', '-8'].includes(st.potTier)) count('gemFound');
   return done(`${st.name}을(를) 관찰했습니다. 포텐 추정 ${st.estimate.low}~${st.estimate.high}, 행운 ${st.luck}.`);
 }
 
@@ -107,6 +110,7 @@ export function doTalk(kind) {
     if (backfire && st.personality !== '냉정') { if (rng.next() < p && shiftMorale(st, -1)) down++; }
     else if (rng.next() < p && shiftMorale(st, 1)) up++;
   }
+  if (up >= 10) count('bigTalk');
   return done(`${TALK_NAMES[kind]} 훈화를 했습니다. 사기가 오른 학생 ${up}명, 떨어진 학생 ${down}명.`);
 }
 
@@ -146,6 +150,7 @@ export function doSeminar(stat) {
 export function doOvertime() {
   const s = getState();
   if (s.overtime >= 2) return fail('이번 주에는 더 야근할 수 없습니다.');
+  count('overtime');
   s.overtime += 1; s.ap += 1; s.fatigue = clamp(s.fatigue + 15, 0, 100);
   return done(`야근으로 AP +1. 피로 ${s.fatigue}.`);
 }
@@ -174,15 +179,18 @@ export function resolveDecision(msgId, choice) {
   const st = studentById(m.ref.studentId);
   let msg;
   if (choice === 'cover') {
+    count('cover');
     st.bond = clamp(st.bond + 20, 0, 100);
     if (s.warden.relation < 70) s.trust = clamp(s.trust - 3, 0, 100);
     s.warden.relation = clamp(s.warden.relation - 10, 0, 100);
     msg = `${st.name}을(를) 감쌌습니다. 결속도가 올랐지만 사감과의 관계가 나빠졌습니다.`;
   } else if (choice === 'penalty') {
+    count('strict');
     shiftMorale(st, -1);
     s.warden.relation = clamp(s.warden.relation + 5, 0, 100);
     msg = `${st.name}에게 벌점을 줬습니다. 사기가 떨어졌고 사감과의 관계는 좋아졌습니다.`;
   } else {
+    count('strict');
     shiftMorale(st, -2);
     st.calmUntil = s.turn + 4;
     msg = `${st.name}을(를) 크게 혼냈습니다. 4주 동안은 같은 일을 하지 않을 겁니다.`;

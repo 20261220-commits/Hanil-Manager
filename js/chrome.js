@@ -39,6 +39,8 @@ export function renderGamebar() {
     else location.hash = 'inbox';
   });
 
+  document.getElementById('who').textContent = `${s.profile.title} ${s.profile.name} 선생님`;
+
   const n = unreadCount();
   const count = document.getElementById('inbox-count');
   count.textContent = n;

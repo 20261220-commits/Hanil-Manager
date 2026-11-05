@@ -1,5 +1,5 @@
 // 담임반 화면: FM의 선수단 목록처럼 30명을 한눈에 본다.
-import { getState, newGame } from './game/state.js';
+import { getState } from './game/state.js';
 import { needLevel, topNeed } from './game/students.js';
 import { NEEDS, MORALE } from './content/stats.js';
 import { esc, stars, moralePill, needBar, traitBadge } from './ui.js';
@@ -18,7 +18,6 @@ const COLS = [
 ];
 let sort = { key: 'no', dir: 1 };
 let filter = 'all';
-let confirmingReset = false;
 
 export function renderHomeroom(app) {
   const st = getState();
@@ -38,10 +37,6 @@ export function renderHomeroom(app) {
   app.innerHTML = `
     <div class="bhead">
       <div><span class="badge">${esc(st.weekLabel)}</span><h1>${esc(st.className)} 담임반</h1></div>
-      <div class="reset">${confirmingReset
-        ? `<span class="note">새 학생들로 다시 시작할까요? 지금 반은 사라집니다.</span>
-           <button class="btn" type="button" data-reset="no">취소</button><button class="btn danger" type="button" data-reset="yes">새로 시작</button>`
-        : `<button class="btn" type="button" data-reset="ask">새 게임</button>`}</div>
     </div>
     <div class="tiles">
       <div class="tile-stat"><span class="lbl">인원</span><b>${list.length}명</b></div>
@@ -86,12 +81,6 @@ export function renderHomeroom(app) {
     tr.addEventListener('click', (e) => { if (!e.target.closest('a')) open(); });
     tr.addEventListener('keydown', (e) => { if (e.key === 'Enter') open(); });
   });
-  app.querySelectorAll('[data-reset]').forEach((b) => b.addEventListener('click', () => {
-    const v = b.dataset.reset;
-    if (v === 'yes') { newGame(); confirmingReset = false; filter = 'all'; }
-    else confirmingReset = v === 'ask';
-    renderHomeroom(app);
-  }));
 
   return [{ label: '담임반' }];
 }
