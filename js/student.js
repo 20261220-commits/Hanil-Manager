@@ -1,5 +1,7 @@
 // 학생 상세: 능력치, 성격, 성향, 상태, 욕구, 숨김 정보
-import { getState, studentById, observeStudent } from './game/state.js';
+import { getState, studentById } from './game/state.js';
+import { doCounsel, doObserve, doFocus } from './game/turn.js';
+import { notify } from './chrome.js';
 import { STAT_GROUPS, STAT_LABEL, NEEDS } from './content/stats.js';
 import { PERSONALITIES, TALKS } from './content/personality.js';
 import { TRAITS } from './content/traits.js';
@@ -21,6 +23,8 @@ export function renderStudent(app, id) {
   const prev = st.students[(idx - 1 + st.students.length) % st.students.length];
   const next = st.students[(idx + 1) % st.students.length];
   const leader = s.stats['통솔'] >= 12;
+  const freeObs = st.turn === 1 && st.freeObservations > 0;
+  const focusing = s.focus && s.focus.until > st.turn;
 
   app.innerHTML = `
     <div class="bhead">
@@ -56,9 +60,20 @@ export function renderStudent(app, id) {
             <dt>포텐</dt><dd>${s.estimate ? `${stars(s.estimate.high, '포텐 추정')} <span class="note">추정 ${s.estimate.low}~${s.estimate.high}</span>` : '<span class="note">관찰 전</span>'}</dd>
             <dt>행운</dt><dd>${s.observed ? `<span class="luck" style="background:${LUCK_COLOR[s.luck]}"></span> ${s.luck}` : '<span class="note">관찰 전</span>'}</dd>
           </dl>
-          ${s.observed ? '' : `<button class="btn primary" type="button" id="observe" ${st.freeObservations > 0 ? '' : 'disabled'}>
-            학생 관찰 (무료 ${st.freeObservations}회 남음)</button>
-            ${st.freeObservations > 0 ? '' : '<p class="note">무료 관찰을 다 썼습니다. 다음 주부터는 1 AP를 씁니다 (턴 진행에서 추가 예정).</p>'}`}
+        </section>
+
+        <section class="panel">
+          <h2>이번 주 행동 <span class="note">남은 AP ${st.ap}</span></h2>
+          <div class="stu-acts">
+            <button class="btn primary" type="button" id="counsel" ${st.ap < 1 ? 'disabled' : ''}>개인 상담 <span>1 AP</span></button>
+            ${s.observed ? '' : `<button class="btn" type="button" id="observe" ${freeObs || st.ap >= 1 ? '' : 'disabled'}>학생 관찰 <span>${freeObs ? `무료 ${st.freeObservations}회 남음` : '1 AP'}</span></button>`}
+          </div>
+          <div class="row">
+            <select id="focus-stat" aria-label="특훈할 스탯" ${focusing ? 'disabled' : ''}>${STAT_GROUPS.map((g) => `<optgroup label="${g.label}">${g.stats.map((k) => `<option value="${k}">${statName(k)} ${s.stats[k]}</option>`).join('')}</optgroup>`).join('')}</select>
+            <button class="btn" type="button" id="focus" ${focusing || st.ap < 1 ? 'disabled' : ''}>개인 특훈 <span>1 AP</span></button>
+          </div>
+          <p class="note">${focusing ? `${statName(s.focus.stat)} 특훈 중 (성장 3배, ${s.focus.until - st.turn}주 남음)` : '특훈은 2주 동안 고른 스탯의 성장을 3배로 올립니다.'}
+            ${s.lastCounsel ? ` 마지막 상담: ${st.turn - s.lastCounsel === 0 ? '이번 주' : `${st.turn - s.lastCounsel}주 전`}.` : ''}</p>
         </section>
 
         <section class="panel">
@@ -88,6 +103,8 @@ export function renderStudent(app, id) {
       </aside>
     </div>`;
 
-  app.querySelector('#observe')?.addEventListener('click', () => { observeStudent(id); renderStudent(app, id); });
+  app.querySelector('#observe')?.addEventListener('click', () => notify(doObserve(id)));
+  app.querySelector('#counsel').addEventListener('click', () => notify(doCounsel(id)));
+  app.querySelector('#focus').addEventListener('click', () => notify(doFocus(id, app.querySelector('#focus-stat').value)));
   return [{ label: '담임반', href: '#class' }, { label: s.name }];
 }

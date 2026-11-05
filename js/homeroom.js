@@ -48,7 +48,9 @@ export function renderHomeroom(app) {
       <div class="tile-stat"><span class="lbl">반 평균 사기</span><b>${moraleAvg}</b></div>
       <div class="tile-stat"><span class="lbl">평균 욕구</span><b>${avgNeed}</b></div>
       <div class="tile-stat"><span class="lbl">주의가 필요한 학생</span><b>${attention.length}명</b><span class="note">욕구 70 이상이거나 사기 낮음 이하</span></div>
-      <div class="tile-stat"><span class="lbl">무료 학생 관찰</span><b>${st.freeObservations}회 남음</b><span class="note">입학식 주간 한정</span></div>
+      ${st.turn === 1
+        ? `<div class="tile-stat"><span class="lbl">무료 학생 관찰</span><b>${st.freeObservations}회 남음</b><span class="note">입학식 주간 한정</span></div>`
+        : `<div class="tile-stat"><span class="lbl">관찰한 학생</span><b>${list.filter((x) => x.observed).length}명</b><span class="note">관찰은 학생 화면에서 1 AP</span></div>`}
     </div>
     <div class="filters" role="group" aria-label="보기">
       ${[['all', '전체'], ['attention', '주의 필요'], ['unseen', '관찰 안 한 학생']].map(([k, l]) =>

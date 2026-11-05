@@ -15,11 +15,14 @@
   <nav class="mainnav" aria-label="메뉴">
     <a href="#campus" data-section="campus">캠퍼스</a>
     <a href="#class" data-section="class">담임반</a>
+    <a href="#inbox" data-section="inbox">받은 편지함 <span class="count" id="inbox-count" hidden></span></a>
+    <a href="#plan" data-section="plan">행동·훈련</a>
   </nav>
-  <nav class="crumbs" id="crumbs" aria-label="현재 위치"></nav>
-  <span class="week" id="week"></span>
+  <div class="gamebar" id="gamebar" aria-label="이번 주 상태"></div>
 </header>
+<nav class="crumbs" id="crumbs" aria-label="현재 위치"></nav>
 <main id="app" class="app" aria-live="polite"></main>
+<div class="toast" id="toast" role="status" hidden></div>
 <script type="module" src="js/main.js"></script>
 </body>
 </html>

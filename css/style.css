@@ -206,3 +206,63 @@ a.chip { text-decoration: none; }
 /* 사기 화살표 */
 .mood { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; white-space: nowrap; }
 .mood-icon { flex: none; display: block; }
+
+/* 지도를 화면 가득 */
+.map-full { width: 100%; }
+.map-tip span { font-weight: 400; opacity: .75; font-size: 12px; margin-left: 4px; }
+
+/* 위쪽 메뉴 · 게임 바 */
+.topbar { row-gap: 8px; }
+.mainnav .count { display: inline-block; min-width: 18px; padding: 0 5px; border-radius: 999px; background: var(--bad); color: #fff; font-size: 11px; text-align: center; margin-left: 2px; }
+.mainnav .count[hidden] { display: none; }
+.gamebar { margin-left: auto; display: flex; align-items: center; gap: 6px 14px; flex-wrap: wrap; font-size: 13px; }
+.gb-week { font-family: var(--mono); color: var(--ink); font-weight: 500; }
+.gb-item { display: inline-flex; align-items: center; gap: 6px; }
+.gb-item .lbl { color: var(--muted); font-size: 12px; }
+.gb-item b { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.gb-item.warn b { color: var(--warn); } .gb-item.bad b { color: var(--bad); }
+.dots { display: inline-flex; gap: 3px; }
+.dots i { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--accent); }
+.dots i.on { background: var(--accent); }
+.gb-next { padding: 6px 14px; }
+.crumbs { max-width: 1280px; margin: 0 auto; padding-block: 12px 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.crumbs[hidden] { display: none; }
+.toast { position: fixed; z-index: 20; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); max-width: min(560px, calc(100vw - 32px));
+  background: var(--ink); color: var(--paper); padding: 10px 16px; border-radius: 10px; font-size: 13.5px; box-shadow: 0 6px 24px rgba(0,0,0,.18); }
+.toast.bad { background: var(--bad); color: #fff; }
+.toast[hidden] { display: none; }
+
+/* 받은 편지함 */
+.group-title { font-size: 14px; font-weight: 600; margin: 4px 0 0; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.inbox-group { display: grid; gap: 10px; }
+.msg { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 8px; }
+.msg header { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.msg h2 { font-size: 15px; }
+.msg p { margin: 0; line-height: 1.6; }
+.msg.unread { border-color: var(--accent); }
+.msg-kind { font-size: 11.5px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0 8px; }
+.msg.k-event { border-color: var(--warn); }
+.msg.k-event .msg-kind { color: var(--warn); border-color: var(--warn); }
+.msg.k-warn .msg-kind { color: var(--bad); border-color: var(--bad); }
+.choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; }
+.btn.choice, .talk-btns .btn, .stu-acts .btn { display: grid; gap: 2px; text-align: left; }
+.btn.choice span, .talk-btns .btn span, .stu-acts .btn span { font-weight: 400; font-size: 12px; opacity: .8; }
+
+/* 행동·훈련 */
+.acts { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.act { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 10px; align-content: start; }
+.act header { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.act .cost { font-family: var(--mono); font-size: 12px; color: var(--muted); white-space: nowrap; }
+.talk-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.row select { font: inherit; padding: 7px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); min-width: 0; flex: 1; }
+.btn.small { padding: 4px 10px; font-size: 12.5px; }
+.train { display: grid; grid-template-columns: 90px 1fr; gap: 6px 12px; align-items: center; max-width: 560px; }
+.train label { display: flex; justify-content: space-between; color: var(--muted); font-size: 13px; }
+.train output, .train b { font-family: var(--mono); color: var(--ink); }
+.train .lbl { color: var(--muted); font-size: 13px; }
+.train input[type=range] { accent-color: var(--accent); width: 100%; }
+.trainbar { display: flex; height: 10px; border-radius: 5px; overflow: hidden; max-width: 560px; background: var(--soft); }
+.trainbar .ti { background: var(--rare); } .trainbar .tb { background: var(--warn); } .trainbar .tr { background: var(--good); }
+.stu-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media (max-width: 640px) { .gamebar { margin-left: 0; width: 100%; } .talk-btns { grid-template-columns: 1fr; } }
