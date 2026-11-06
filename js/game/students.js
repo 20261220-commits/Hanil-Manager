@@ -29,10 +29,12 @@ function uniqueName(rng, used) {
 }
 
 // 1학년 학생 한 명. 공개 스탯은 5~12 (룰북 8.0)
+// opts.bonus: 2학년 +2, 3학년 +4처럼 모든 공개 스탯에 더하는 값
 function makeFreshman(rng, used, opts = {}) {
   const base = opts.base ?? 6 + rng.next() * 4;
+  const bonus = opts.bonus ?? 0;
   const stats = {};
-  for (const k of STATS) stats[k] = clamp(Math.round(base + rng.gauss() * 1.8), 5, 12);
+  for (const k of STATS) stats[k] = clamp(clamp(Math.round(base + rng.gauss() * 1.8), 5, 12) + bonus, 1, 20);
   if (opts.leader) stats['통솔'] = rng.int(12, 13);
 
   const personality = rng.pick(PERSONALITIES).name;
@@ -54,7 +56,7 @@ function makeFreshman(rng, used, opts = {}) {
 
   return {
     name: uniqueName(rng, used),
-    grade: 1,
+    grade: opts.grade ?? 1,
     stats,
     personality,
     trait,
@@ -91,6 +93,21 @@ export function makeHomeroom(rng, size = 30) {
   ordered.forEach((s, i) => { s.id = `s${String(i + 1).padStart(2, '0')}`; s.no = i + 1; });
   rng.shuffle(ordered).forEach((s, i) => { s.room = DORM_ROOMS[Math.floor(i / 4)] ?? DORM_ROOMS[DORM_ROOMS.length - 1]; });
   return ordered;
+}
+
+// 다른 반 학생: 저장하지 않고 반마다 정해진 시드로 그때그때 똑같이 만든다.
+// 학년 보정(2학년 +2, 3학년 +4)에 시간이 지난 만큼(12주마다 +1, 담임반 성장 속도와 비슷) 더한다.
+export function makeClassRoster(rng, grade, turn, owner, size = 30) {
+  const used = new Set();
+  const bonus = (grade - 1) * 2 + Math.floor((turn - 1) / 12);
+  const list = [];
+  for (let i = 0; i < size; i++) {
+    const st = makeFreshman(rng, used, { bonus, grade });
+    st.faction = owner;
+    list.push(st);
+  }
+  list.sort((a, b) => a.name.localeCompare(b.name, 'ko')).forEach((st, i) => { st.id = `o${String(i + 1).padStart(2, '0')}`; st.no = i + 1; });
+  return list;
 }
 
 // 학생 관찰 (룰북 4.4): 교사 안목이 낮을수록 포텐 추정 범위가 넓고 부정확하다.

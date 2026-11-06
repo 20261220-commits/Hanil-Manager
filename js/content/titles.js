@@ -8,6 +8,8 @@ export const TITLES = [
   { name: '야근 요정', how: '야근을 10번', check: (s) => (s.counters.overtime ?? 0) >= 10 },
   { name: '학생 편', how: '일탈한 학생을 10번 감쌈', check: (s) => (s.counters.cover ?? 0) >= 10 },
   { name: '라면 단속반', how: '일탈한 학생에게 벌점이나 꾸중을 10번', check: (s) => (s.counters.strict ?? 0) >= 10 },
+  { name: '승부사', how: '다른 반과의 대결에서 5번 이김', check: (s) => (s.counters.duelWin ?? 0) >= 5 },
+  { name: '정복자', how: '다른 반을 처음으로 점령', check: (s) => (s.counters.conquer ?? 0) >= 1 },
   { name: '한 학기 생존자', how: '1학기를 끝까지 버팀 (여름방학 도달)', check: (s) => s.turn >= 21 },
 ];
 

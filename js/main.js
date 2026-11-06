@@ -1,6 +1,7 @@
 // 화면 전환
 // 게임 밖: #title 대기 화면 · #new 새로 플레이 · #saves 세이브 파일 · #settings 설정
-// 게임 안: #campus 캠퍼스 · #b-<건물> 평면도 · #class 담임반 · #s-<학생> 학생 · #inbox 받은 편지함 · #plan 행동·훈련 · #profile 프로필
+// 게임 안: #campus 캠퍼스 · #b-<건물> 평면도 · #class 담임반 · #s-<학생> 학생 · #school 교내 판도 · #duel-<반> 대결
+//          #inbox 받은 편지함 · #plan 행동·훈련 · #profile 프로필
 import { renderCampus } from './campus.js';
 import { renderBuilding } from './building.js';
 import { renderHomeroom } from './homeroom.js';
@@ -8,6 +9,8 @@ import { renderStudent } from './student.js';
 import { renderInbox } from './inbox.js';
 import { renderPlan } from './plan.js';
 import { renderProfile } from './profile.js';
+import { renderSchool } from './school-view.js';
+import { renderDuel } from './duel-view.js';
 import { renderLoading, renderTitle, renderNewGame, renderSaves, renderSettings, resetDraft } from './menu.js';
 import { renderGamebar } from './chrome.js';
 import { isPlaying, quitToTitle, migrateOldSave } from './game/state.js';
@@ -39,6 +42,8 @@ async function route({ keepScroll = false } = {}) {
     if (hash.startsWith('b-')) crumbs = await renderBuilding(app, hash.slice(2));
     else if (hash === 'class') crumbs = renderHomeroom(app);
     else if (hash.startsWith('s-')) crumbs = renderStudent(app, hash.slice(2));
+    else if (hash === 'school') crumbs = renderSchool(app);
+    else if (hash.startsWith('duel-')) crumbs = renderDuel(app, hash.slice(5));
     else if (hash === 'inbox') crumbs = renderInbox(app);
     else if (hash === 'plan') crumbs = renderPlan(app);
     else if (hash === 'profile') crumbs = renderProfile(app);
@@ -48,7 +53,7 @@ async function route({ keepScroll = false } = {}) {
       (i ? '<span aria-hidden="true">›</span>' : '') +
       (c.href ? `<a href="${c.href}">${c.label}</a>` : `<span aria-current="page">${c.label}</span>`)).join('');
     crumbsEl.hidden = crumbs.length < 2;
-    const section = hash === 'class' || hash.startsWith('s-') ? 'class' : ['inbox', 'plan', 'profile'].includes(hash) ? hash : 'campus';
+    const section = hash === 'class' || hash.startsWith('s-') ? 'class' : hash === 'school' || hash.startsWith('duel-') ? 'school' : ['inbox', 'plan', 'profile'].includes(hash) ? hash : 'campus';
     document.querySelectorAll('.mainnav a').forEach((a) => a.setAttribute('aria-current', String(a.dataset.section === section)));
     renderGamebar();
     if (!keepScroll) window.scrollTo(0, 0);

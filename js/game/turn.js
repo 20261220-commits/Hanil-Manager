@@ -5,6 +5,7 @@ import { weekLabel, eventOf, nearExam, isHomecoming } from './calendar.js';
 import { STAT_GROUPS, STAT_LABEL, MORALE } from '../content/stats.js';
 import { PERSONALITIES } from '../content/personality.js';
 import { clamp } from './rng.js';
+import { weeklySchool, semesterGoal } from './school.js';
 
 const PERS = Object.fromEntries(PERSONALITIES.map((p) => [p.name, p]));
 const MENTAL = STAT_GROUPS[0].stats, MIND = STAT_GROUPS[1].stats, BODY = STAT_GROUPS[2].stats;
@@ -205,6 +206,8 @@ const NEED_NAME = { play: '놀고 싶은 욕구', home: '귀가 욕구', grade: 
 export const needName = (k) => NEED_NAME[k];
 
 export function canEndWeek() {
+  const s = getState();
+  if (s.duel && !s.duel.m.done) return '진행 중인 대결이 있습니다. 대결을 끝까지 치러 주세요.';
   const pend = pendingDecisions();
   return pend.length ? `처리하지 않은 일이 ${pend.length}건 있습니다. 받은 편지함에서 먼저 결정해 주세요.` : null;
 }
@@ -327,7 +330,17 @@ export function endWeek() {
     ].join('\n'),
   });
 
-  // 9. 교사 피로와 다음 주 준비
+  // 9. 교내 판도: 일상 영향력, 담당 수업, 반장 선거, 지배권 (룰북 8.2)
+  if (s.duel?.m.done) s.duel = null;
+  for (const msg of weeklySchool(s, rng)) addMessage(msg);
+  if (s.turn === 20) {
+    const g = semesterGoal(s);
+    s.trust = clamp(s.trust + (g.ok ? 10 : -10), 0, 100);
+    addMessage({ kind: g.ok ? 'info' : 'warn', title: `1학기 평가: ${g.ok ? '목표 달성' : '목표 미달'}`,
+      body: `담임반 지지도 ${Math.round(g.home)}% (목표 70%), 추가로 점령한 반 ${g.owned}개 (목표 1개). 교장 신임 ${g.ok ? '+10' : '-10'}.` });
+  }
+
+  // 10. 교사 피로와 다음 주 준비
   s.fatigue = clamp(s.fatigue - 10 - s.ap * 5 - 5, 0, 100);
   s.warden.mood = rng.weighted([['좋음', 25], ['보통', 50], ['나쁨', 25]]);
   s.turn += 1;
@@ -364,9 +377,9 @@ function creature(s, rng) {
 
 function eventText(ev) {
   return {
-    '학급 임원 선거': '반장 선거 주간입니다. (선거는 다음 업데이트에서 플레이할 수 있습니다.)',
+    '학급 임원 선거': '반장 선거 주간입니다. 이번 주말에 선거가 열립니다. 담임반 지지도가 높을수록 우리 쪽 후보가 유리합니다.',
     중간고사: '중간고사 주간입니다. 지난 몇 주 동안 성적 불안이 빠르게 올랐을 겁니다.',
-    체육대회: '전교 체육대회 주간입니다. (대결은 다음 단계에서 추가됩니다.)',
+    체육대회: '전교 체육대회 주간입니다. 교내 판도에서 다른 반에 반 대항전을 신청해 보세요.',
     기말고사: '기말고사 주간입니다.',
     '학기 평가': '1학기 마지막 주입니다. 교장의 학기 평가가 있습니다.',
   }[ev] ?? '';

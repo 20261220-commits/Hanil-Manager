@@ -4,9 +4,10 @@ import { makeHomeroom } from './students.js';
 import { weekLabel } from './calendar.js';
 import { subjectByKey, BASE_TEACHER } from '../content/subjects.js';
 import { TITLES } from '../content/titles.js';
+import { makeSchool } from './school.js';
 
 export const SLOT_COUNT = 3;
-const VERSION = 3;
+const VERSION = 4;
 const slotKey = (n) => `hanil-manager-slot-${n}`;
 const META_KEY = 'hanil-manager-meta';
 const OLD_KEY = 'hanil-manager-save-v1';
@@ -39,6 +40,8 @@ function upgrade(s) {
   s.msgSeq ??= 0;
   s.counters ??= {};
   s.profile ??= { name: '이름 없는', subject: null, title: TITLES[0].name, titles: [TITLES[0].name] };
+  s.school ??= makeSchool(s.seed, s.profile.name);
+  s.duel ??= null;
   for (const st of s.students) {
     st.prog ??= {};
     st.focus ??= null;

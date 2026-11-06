@@ -33,7 +33,7 @@ export function renderGamebar() {
     <button type="button" class="btn primary gb-next" id="next-week">다음 주로 ▶</button>`;
   bar.querySelector('#next-week').addEventListener('click', () => {
     const r = endWeek();
-    if (!r.ok) { toast(r.msg, true); location.hash = 'inbox'; return; }
+    if (!r.ok) { toast(r.msg, true); location.hash = s.duel && !s.duel.m.done ? `duel-${s.duel.classId}` : 'inbox'; return; }
     toast(r.msg);
     if (location.hash === '#inbox') window.dispatchEvent(new CustomEvent('game:changed'));
     else location.hash = 'inbox';
