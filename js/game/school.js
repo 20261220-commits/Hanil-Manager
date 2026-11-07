@@ -4,6 +4,7 @@ import { makeClassRoster } from './students.js';
 import { FACTION_KEYS, AI_FACTIONS, START_OWNERS, HOMEROOM_ID, FACTIONS, classLabel } from '../content/factions.js';
 import { SURNAMES, GIVEN } from '../content/names.js';
 import { MORALE } from '../content/stats.js';
+import { PLACES, DORM_C } from '../content/places.js';
 
 export const MORALE_MULT = [0.85, 0.92, 0.96, 1, 1.03, 1.06, 1.1];
 export const moraleMult = (m) => MORALE_MULT[Math.max(0, MORALE.indexOf(m))];
@@ -63,7 +64,42 @@ export function makeSchool(seed, teacherName) {
   }
   // 첫해 담당 수업: 1학년 3개 반 무작위 (담임반 제외)
   const teach = rng.shuffle(classes.filter((c) => c.grade === 1 && c.id !== HOMEROOM_ID)).slice(0, 3).map((c) => c.id);
-  return { classes, teaching: teach, weather: '맑음', challenged: {} };
+  return { classes, teaching: teach, weather: '맑음', challenged: {}, ...extraTiles() };
+}
+
+// 반 말고 다른 타일과 AI 상태. 예전 세이브에도 덧붙인다.
+export function extraTiles() {
+  return {
+    places: PLACES.map((p) => ({ id: p.id, owner: p.start })),
+    ai: { gone: {}, elderNew: 0, news: [] },
+  };
+}
+
+export const placeById = (s, id) => s.school.places.find((p) => p.id === id);
+export const placeInfo = (id) => PLACES.find((p) => p.id === id);
+
+// 그 계파의 대표 선수단: 가장 높은 학년의 반 (같으면 번호가 빠른 반). 무소속은 1학년 반.
+export function championClass(s, faction) {
+  const list = s.school.classes.filter((c) => c.owner === faction && (faction !== 'player' || c.id === HOMEROOM_ID));
+  if (!list.length) return null;
+  if (faction === 'none') return list.sort((a, b) => a.grade - b.grade || a.no - b.no)[0];
+  return list.sort((a, b) => b.grade - a.grade || a.no - b.no)[0];
+}
+
+// 점령 비율 (플레이어 위협도 계산용): 반 + 야외 구역 + 특별실 + 핵심실
+export function ownedRatio(s, faction) {
+  const tiles = [...s.school.classes, ...s.school.places.filter((p) => placeInfo(p.id).kind !== 'base')];
+  return tiles.filter((t) => t.owner === faction).length / tiles.length;
+}
+
+// 지도 색칠용: 건물 안 타일의 주인별 개수
+export function buildingOwners(s, buildingId) {
+  const out = {};
+  const add = (k, n = 1) => { out[k] = (out[k] ?? 0) + n; };
+  if (buildingId === 'gujak') for (const c of s.school.classes) add(c.owner);
+  if (buildingId === 'hyeonje-c') { add('player', DORM_C.ours); add('none', DORM_C.rooms - DORM_C.ours); }
+  for (const p of s.school.places) if (placeInfo(p.id).building === buildingId) add(p.owner);
+  return out;
 }
 
 export const classById = (s, id) => s.school.classes.find((c) => c.id === id);

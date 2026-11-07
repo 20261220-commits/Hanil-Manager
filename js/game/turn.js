@@ -6,6 +6,7 @@ import { STAT_GROUPS, STAT_LABEL, MORALE } from '../content/stats.js';
 import { PERSONALITIES } from '../content/personality.js';
 import { clamp } from './rng.js';
 import { weeklySchool, semesterGoal } from './school.js';
+import { aiWeek } from './ai.js';
 
 const PERS = Object.fromEntries(PERSONALITIES.map((p) => [p.name, p]));
 const MENTAL = STAT_GROUPS[0].stats, MIND = STAT_GROUPS[1].stats, BODY = STAT_GROUPS[2].stats;
@@ -332,6 +333,7 @@ export function endWeek() {
 
   // 9. 교내 판도: 일상 영향력, 담당 수업, 반장 선거, 지배권 (룰북 8.2)
   if (s.duel?.m.done) s.duel = null;
+  aiWeek(s, rng); // AI 계파 행동 (룰북 7.5)
   for (const msg of weeklySchool(s, rng)) addMessage(msg);
   if (s.turn === 20) {
     const g = semesterGoal(s);

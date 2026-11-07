@@ -6,8 +6,10 @@ export const FACTIONS = {
   pe: { name: '체육부장', short: '체육', refuses: true, favorite: '반 대항전' },
   innov: { name: '혁신파 교사', short: '혁신', refuses: true, favorite: '행사 기획' },
   none: { name: '무소속', short: '무소속', refuses: false },
+  neutral: { name: '중립 (교장)', short: '중립', refuses: false },
 };
-export const FACTION_KEYS = Object.keys(FACTIONS);
+// 지지도를 가지는 세력 (중립은 교장실·행정실 표시용)
+export const FACTION_KEYS = ['player', 'elder', 'exam', 'pe', 'innov', 'none'];
 export const AI_FACTIONS = ['elder', 'exam', 'pe', 'innov'];
 
 // 학년별 반 주인 (8.0 초기 영토). 1학년 4반은 플레이어 담임반이고, 양옆 3·5반은 무소속이다.

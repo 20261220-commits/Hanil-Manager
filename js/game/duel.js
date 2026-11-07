@@ -1,27 +1,55 @@
 // 대결 신청과 진행: 게임 상태(AP, 지지도, 학생)와 대결 엔진을 잇는다 (룰북 8.2, 9장)
+// 대상은 반(교실) 또는 야외 구역이다. 야외 구역은 주인 계파의 대표 반이 지킨다.
 import { getState, save, nextRng, addMessage, count, checkTitles } from './state.js';
 import { makeRng, clamp } from './rng.js';
 import { isVacation } from './calendar.js';
-import { classById, rosterOf, transfer } from './school.js';
+import { classById, rosterOf, transfer, placeById, placeInfo, championClass } from './school.js';
 import { SPORTS, createMatch, playSegment, preTalk, aiTimeout, substitute, isUnlocked, fit, autoLineup, bestTactics, estimateWin } from './match.js';
 import { FACTIONS, HOMEROOM_ID, classLabel } from '../content/factions.js';
+import { makeClassRoster } from './students.js';
 import { teacherStat, shiftMorale } from './turn.js';
 
 export const DUEL_AP = 2;
 
-export function challengeBlock(s, cls) {
-  if (cls.id === HOMEROOM_ID) return '우리 담임반입니다.';
-  if (cls.owner === 'player') return '이미 우리가 점령한 반입니다.';
+// 대결 대상 정보
+export function target(s, id) {
+  const cls = classById(s, id);
+  if (cls) {
+    return { id, kind: 'class', label: classLabel(id), owner: cls.owner, cls, seed: cls.seed,
+      teacher: cls.teacher.name, lead: cls.teacher.lead, team: classLabel(id), roster: () => rosterOf(s, cls) };
+  }
+  const p = placeById(s, id);
+  if (!p) return null;
+  const info = placeInfo(id);
+  const champ = p.owner === 'player' ? null : championClass(s, p.owner);
+  const seed = [...id].reduce((a, c) => a * 31 + c.charCodeAt(0), 7) % 1e9;
+  return {
+    id, kind: 'place', placeKind: info.kind, label: info.name, owner: p.owner, place: p, info, seed: seed + s.turn,
+    teacher: champ?.teacher.name ?? null, lead: champ?.teacher.lead ?? 10, team: champ ? classLabel(champ.id) : `${FACTIONS[p.owner]?.short ?? ''} 연합`,
+    roster: () => (champ ? rosterOf(s, champ) : makeClassRoster(makeRng(seed), 1, s.turn, p.owner)),
+  };
+}
+
+export function challengeBlock(s, t) {
+  if (t.kind === 'class' && t.id === HOMEROOM_ID) return '우리 담임반입니다.';
+  if (t.owner === 'player') return t.kind === 'class' ? '이미 우리가 점령한 반입니다.' : '이미 우리 땅입니다.';
+  if (t.kind === 'place' && t.placeKind !== 'outdoor') return '대결로는 얻을 수 없는 곳입니다.';
   if (s.duel && !s.duel.m.done) return '진행 중인 대결을 먼저 끝내 주세요.';
   if (s.turn < 3) return '대결 신청은 3월 3주부터 할 수 있습니다.';
   if (isVacation(s.turn)) return '방학에는 대결을 할 수 없습니다.';
-  if (s.school.challenged[cls.id]) return '이번 주에 이미 도전한 반입니다.';
+  if (s.school.challenged[t.id]) return '이번 주에 이미 도전한 곳입니다.';
   if (s.ap < DUEL_AP) return `AP가 부족합니다 (필요 ${DUEL_AP}).`;
   return null;
 }
 
 // 비 오는 주에는 야외 종목(축구·야구)이 농구로 바뀐다 (9.8).
 export const actualSport = (s, sport) => (s.school.weather === '비' && SPORTS[sport].outdoor ? 'basketball' : sport);
+
+// 홈 보정: 그 종목 경기장(운동장·무성관)의 주인이 도전자면 도전자가, 아니면 도전받은 쪽이 홈
+export function homeSide(s, sport, attacker) {
+  const venue = s.school.places.find((p) => placeInfo(p.id).venue?.includes(sport));
+  return venue && venue.owner === attacker ? 'attacker' : 'defender';
+}
 
 const subjectBonus = (s) => (s.profile.subject === 'pe' ? 0.05 : 0); // 체육: 반 대항전이 강한 대결
 
@@ -33,7 +61,7 @@ export function playerSide(s, draft) {
   };
 }
 
-function aiTactics(sport, rng) {
+export function aiTactics(sport, rng) {
   const out = { ...SPORTS[sport].defaults };
   for (const [k, opt] of Object.entries(SPORTS[sport].options)) {
     if (opt.pre) continue;
@@ -42,40 +70,43 @@ function aiTactics(sport, rng) {
   return out;
 }
 
-export function oppSide(s, cls, sport, rng) {
+export function oppSide(s, t, sport, rng) {
   return {
-    key: cls.id, name: classLabel(cls.id), faction: cls.owner,
-    lead: cls.teacher.lead, home: true, players: rosterOf(s, cls),
+    key: t.id, name: t.team, faction: t.owner, lead: t.lead, home: true, players: t.roster(),
     tactics: rng ? aiTactics(sport, rng) : undefined,
   };
 }
 
-// 상대가 거부하는 종목: 자기 반이 가장 불리한 종목 하나. 무소속은 거부하지 않는다.
-export function refusedSport(s, cls) {
-  if (!FACTIONS[cls.owner].refuses) return null;
-  const ours = s.students, theirs = rosterOf(s, cls);
-  const strength = (list, sport) => {
-    const pos = SPORTS[sport].positions(SPORTS[sport].defaults);
-    const lu = autoLineup(list, pos);
-    return lu.reduce((a, l) => a + fit(list.find((p) => p.id === l.id), l.pos), 0) / lu.length;
-  };
+// 반 전체의 종목별 평균 적합도
+export function teamStrength(list, sport) {
+  const pos = SPORTS[sport].positions(SPORTS[sport].defaults);
+  const lu = autoLineup(list, pos);
+  return lu.reduce((a, l) => a + fit(list.find((p) => p.id === l.id), l.pos), 0) / lu.length;
+}
+
+// 도전받는 쪽이 거부하는 종목: 자기가 가장 불리한 종목 하나. 무소속은 거부하지 않는다.
+export function refusedSport(s, t, attackerRoster = s.students) {
+  if (!FACTIONS[t.owner]?.refuses) return null;
+  const theirs = t.roster();
   let worst = null;
   for (const sport of Object.keys(SPORTS)) {
-    const r = strength(theirs, sport) / strength(ours, sport);
+    const r = teamStrength(theirs, sport) / teamStrength(attackerRoster, sport);
     if (!worst || r < worst.r) worst = { sport, r };
   }
   return worst.sport;
 }
 
 // 예상 승률. 교사 안목이 낮을수록 범위가 넓다.
-export function preview(s, cls, sport) {
+export function preview(s, t, sport) {
   const real = actualSport(s, sport);
-  const est = estimateWin(real, playerSide(s), oppSide(s, cls, real), (t) => makeRng(cls.seed + t * 101 + s.turn * 7), 60);
+  const me = playerSide(s), op = oppSide(s, t, real);
+  if (homeSide(s, real, 'player') === 'attacker') { me.home = true; op.home = false; }
+  const est = estimateWin(real, me, op, (k) => makeRng(t.seed + k * 101 + s.turn * 7), 60);
   const eye = teacherStat('안목');
   const fuzz = (20 - eye) * 0.012;
-  const bias = makeRng(cls.seed + s.turn).gauss() * fuzz * 0.6;
+  const bias = makeRng(t.seed + s.turn).gauss() * fuzz * 0.6;
   const mid = clamp(est.win + bias, 0.02, 0.98);
-  return { sport: real, low: clamp(mid - fuzz, 0, 1), high: clamp(mid + fuzz, 0, 1), draw: est.draw };
+  return { sport: real, low: clamp(mid - fuzz, 0, 1), high: clamp(mid + fuzz, 0, 1), draw: est.draw, home: me.home };
 }
 
 export function autoSetup(s, sport, tactics) {
@@ -88,20 +119,23 @@ export function autoSetup(s, sport, tactics) {
 const fail = (msg) => ({ ok: false, msg });
 const done = (msg) => { checkTitles(); save(); return { ok: true, msg }; };
 
-export function beginDuel(classId, sport, draft) {
+export function beginDuel(targetId, sport, draft) {
   const s = getState();
-  const cls = classById(s, classId);
-  const block = challengeBlock(s, cls); if (block) return fail(block);
-  if (sport === refusedSport(s, cls)) return fail('상대가 거부한 종목입니다.');
+  const t = target(s, targetId);
+  if (!t) return fail('없는 대상입니다.');
+  const block = challengeBlock(s, t); if (block) return fail(block);
+  if (sport === refusedSport(s, t)) return fail('상대가 거부한 종목입니다.');
   const real = actualSport(s, sport);
   const rng = nextRng();
   s.ap -= DUEL_AP;
-  s.school.challenged[classId] = true;
-  const m = createMatch(real, playerSide(s, draft), oppSide(s, cls, real, rng), rng);
+  s.school.challenged[targetId] = true;
+  const me = playerSide(s, draft), op = oppSide(s, t, real, rng);
+  if (homeSide(s, real, 'player') === 'attacker') { me.home = true; op.home = false; }
+  const m = createMatch(real, me, op, rng);
   if (draft.talk !== null && draft.talk !== undefined) preTalk(m, 0, draft.talk, teacherStat('동기부여'), rng);
   if (rng.next() < 0.7) preTalk(m, 1, rng.int(0, 2), 10, rng);
-  s.duel = { classId, sport: real, asked: sport, m, result: null };
-  return done(`${classLabel(classId)}에 ${SPORTS[real].name} 대결을 신청했습니다.${real !== sport ? ' 비가 와서 농구로 바뀌었습니다.' : ''}`);
+  s.duel = { classId: targetId, sport: real, asked: sport, m, result: null };
+  return done(`${t.label}에 ${SPORTS[real].name} 대결을 신청했습니다.${real !== sport ? ' 비가 와서 농구로 바뀌었습니다.' : ''}`);
 }
 
 export function nextSegment() {
@@ -140,65 +174,89 @@ export function duelSub(outId, inId) {
   return { ok: true, msg: '교체했습니다.' };
 }
 
+// 대결 결과를 판도에 반영한다. 플레이어 대결과 AI 대결이 같이 쓴다.
+// attacker, defender: 계파 키. 돌려주는 값: { moved, conquered, absorbed }
+export function settle(s, t, attacker, defender, winnerIsAttacker, grade, rng, politics) {
+  let moved = 0, conquered = false, absorbed = false;
+  if (t.kind === 'class') {
+    const cls = t.cls;
+    if (winnerIsAttacker === true) {
+      moved = transfer(cls, defender, attacker, grade.swing);
+      if (cls.support[attacker] >= 50 && cls.id !== HOMEROOM_ID) {
+        conquered = true;
+        cls.owner = attacker;
+        cls.lowTurns = 0;
+        // 패배 담임 흡수: 30% + 정치력 × 2% (AI는 정치력 10으로 본다)
+        if (rng.next() < 0.3 + politics * 0.02) { absorbed = true; cls.teacher.faction = attacker; }
+      }
+    } else if (winnerIsAttacker === false) {
+      moved = -transfer(cls, attacker, defender, grade.swing, false);
+    }
+  } else if (winnerIsAttacker === true) {
+    t.place.owner = attacker;
+    conquered = true;
+  }
+  return { moved, conquered, absorbed };
+}
+
 function applyResult(s, d, rng) {
   const m = d.m;
-  const cls = classById(s, d.classId);
+  const t = target(s, d.classId);
   const g = m.grade;
-  const owner = cls.owner;
-  let moved = 0, conquered = false, absorbed = false;
-  if (m.winner === 0) {
-    moved = transfer(cls, owner, 'player', g.swing);
-    cls.record.w++;
-    count('duelWin');
-    if (cls.support.player >= 50) {
-      conquered = true;
-      cls.owner = 'player';
-      // 패배 담임 흡수: 30% + 정치력 × 2%
-      if (rng.next() < 0.3 + teacherStat('정치력') * 0.02) { absorbed = true; cls.teacher.faction = 'player'; count('absorbed'); }
-      count('conquer');
-    }
-  } else if (m.winner === 1) {
-    moved = -transfer(cls, 'player', owner, g.swing, false);
-    cls.record.l++;
-  } else {
-    cls.record.d++;
+  const owner = t.owner;
+  const win = m.winner === 0 ? true : m.winner === 1 ? false : null;
+  const { moved, conquered, absorbed } = settle(s, t, 'player', owner, win, g, rng, teacherStat('정치력'));
+  if (t.kind === 'class') {
+    const rec = t.cls.record;
+    if (win === true) rec.w++; else if (win === false) rec.l++; else rec.d++;
   }
+  if (win === true) count('duelWin');
+  if (conquered) count(t.kind === 'class' ? 'conquer' : 'conquerPlace');
+  if (absorbed) count('absorbed');
 
   // 출전 학생: 컨디션, 사기, 소량 성장, MVP 명성
-  const side = m.sides[0];
+  const mvpName = applyToStudents(s, m, 0, rng);
+
+  d.result = { moved, conquered, absorbed, owner, kind: t.kind };
+  const label = t.label;
+  const res = m.winner === 0 ? g.label : m.winner === 1 ? (g.key === 'close' ? '석패' : '패배') : '무승부';
+  const supportLine = t.kind === 'place' ? (win === true ? '' : win === false ? `${label}은(는) 그대로 ${FACTIONS[owner].name} 땅입니다.` : '비겨서 아무것도 바뀌지 않았습니다.')
+    : m.winner === null ? '비겨서 지지도는 변하지 않았습니다.'
+      : m.winner === 0 ? `${label} 우리 지지도 +${moved.toFixed(1)}%p (현재 ${Math.round(t.cls.support.player)}%).`
+        : moved < 0 ? `${label} 우리 지지도 ${moved.toFixed(1)}%p (현재 ${Math.round(t.cls.support.player)}%).` : `${label}에는 원래 우리 지지도가 없어서 잃은 것은 없습니다.`;
+  addMessage({
+    kind: conquered ? 'info' : 'report',
+    title: `${SPORTS[d.sport].name} 대결 ${res}: 1학년 4반 ${m.score[0]} : ${m.score[1]} ${t.team}${t.kind === 'place' ? ` (${label})` : ''}`,
+    body: [
+      supportLine,
+      conquered ? `${label}을(를) 점령했습니다!${t.kind === 'class' ? (absorbed ? ` 담임 ${t.teacher} 선생님이 우리 계파에 들어왔습니다.` : ` 담임 ${t.teacher} 선생님은 ${FACTIONS[owner].name}에 남았습니다.`) : ''}` : '',
+      t.kind === 'class' && m.winner === 0 && !conquered ? '점령하려면 지지도 50% 이상에서 이겨야 합니다.' : '',
+      mvpName ? `MVP: ${mvpName}${m.mvp.si === 0 ? ' (우리 반, 명성 경험치 +60)' : ''}` : '',
+    ].filter(Boolean).join('\n'),
+  });
+}
+
+const GROW = { GK: ['운동신경', '집중력'], DF: ['피지컬', '집중력'], MF: ['체력', '협력'], FW: ['운동신경', '적극성'],
+  PG: ['의사결정', '운동신경'], SG: ['운동신경', '집중력'], SF: ['운동신경', '피지컬'], PF: ['피지컬', '체력'], C: ['피지컬', '체력'],
+  P: ['집중력', '운동신경'], RP: ['집중력', '운동신경'], CA: ['집중력', '의사결정'] };
+
+// 우리 담임반 학생이 뛴 경기의 뒷정리. si: 우리 쪽 번호
+export function applyToStudents(s, m, si, rng) {
+  const side = m.sides[si];
+  const won = m.winner === si, lost = m.winner === 1 - si;
   for (const id of side.used) {
     const st = s.students.find((x) => x.id === id);
     if (!st) continue;
     st.condition = side.players[id].condition;
-    if (m.winner === 0 && rng.next() < 0.6) shiftMorale(st, 1);
-    if (m.winner === 1 && rng.next() < (st.stats['자존감'] >= 13 ? 0.25 : 0.5)) shiftMorale(st, -1);
+    if (won && rng.next() < 0.6) shiftMorale(st, 1);
+    if (lost && rng.next() < (st.stats['자존감'] >= 13 ? 0.25 : 0.5)) shiftMorale(st, -1);
     const pos = side.lineup.find((l) => l.id === id)?.pos ?? 'MF';
-    const w = Object.entries({ GK: ['운동신경', '집중력'], DF: ['피지컬', '집중력'], MF: ['체력', '협력'], FW: ['운동신경', '적극성'],
-      PG: ['의사결정', '운동신경'], SG: ['운동신경', '집중력'], SF: ['운동신경', '피지컬'], PF: ['피지컬', '체력'], C: ['피지컬', '체력'],
-      P: ['집중력', '운동신경'], RP: ['집중력', '운동신경'], CA: ['집중력', '의사결정'] }).find(([k]) => k === pos)?.[1] ?? ['운동신경', '체력'];
-    for (const k of w) st.prog[k] = (st.prog[k] ?? 0) + 0.25;
+    for (const k of GROW[pos] ?? ['운동신경', '체력']) st.prog[k] = (st.prog[k] ?? 0) + 0.25;
   }
-  let mvpName = '';
-  if (m.mvp) {
-    mvpName = m.sides[m.mvp.si].players[m.mvp.id].name;
-    if (m.mvp.si === 0) { const st = s.students.find((x) => x.id === m.mvp.id); if (st) { st.fameExp += 60; shiftMorale(st, 1); } }
-  }
-
-  d.result = { moved, conquered, absorbed, owner };
-  const label = classLabel(cls.id);
-  const res = m.winner === 0 ? g.label : m.winner === 1 ? (g.key === 'close' ? '석패' : '패배') : '무승부';
-  addMessage({
-    kind: conquered ? 'info' : 'report',
-    title: `${SPORTS[d.sport].name} 대결 ${res}: 1학년 4반 ${m.score[0]} : ${m.score[1]} ${label}`,
-    body: [
-      m.winner === null ? '비겨서 지지도는 변하지 않았습니다.'
-        : m.winner === 0 ? `${label} 우리 지지도 +${moved.toFixed(1)}%p (현재 ${Math.round(cls.support.player)}%).`
-          : moved < 0 ? `${label} 우리 지지도 ${moved.toFixed(1)}%p (현재 ${Math.round(cls.support.player)}%).` : `${label}에는 원래 우리 지지도가 없어서 잃은 것은 없습니다.`,
-      conquered ? `${label}을(를) 점령했습니다!${absorbed ? ` 담임 ${cls.teacher.name} 선생님이 우리 계파에 들어왔습니다.` : ` 담임 ${cls.teacher.name} 선생님은 ${FACTIONS[owner].name}에 남았습니다.`}` : '',
-      m.winner === 0 && !conquered ? `점령하려면 지지도 50% 이상에서 이겨야 합니다.` : '',
-      mvpName ? `MVP: ${mvpName}${m.mvp.si === 0 ? ' (우리 반, 명성 경험치 +60)' : ''}` : '',
-    ].filter(Boolean).join('\n'),
-  });
+  if (!m.mvp) return '';
+  const name = m.sides[m.mvp.si].players[m.mvp.id].name;
+  if (m.mvp.si === si) { const st = s.students.find((x) => x.id === m.mvp.id); if (st) { st.fameExp += 60; shiftMorale(st, 1); } }
+  return name;
 }
 
 export function closeDuel() {
@@ -209,3 +267,4 @@ export function closeDuel() {
   return { ok: true, msg: '대결 결과를 정리했습니다.' };
 }
 
+export { autoLineup };

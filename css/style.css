@@ -416,3 +416,17 @@ html.text-large .roster, html.text-large .stats, html.text-large .note { font-si
   .mainnav { order: 3; width: 100%; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
   .mainnav::-webkit-scrollbar { display: none; }
 }
+.news { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 13px; }
+.places tbody tr { cursor: default; }
+.places td { white-space: normal; vertical-align: middle; }
+.f-neutral { --f: var(--f-none); }
+
+/* 캠퍼스 지도 세력 색 */
+.map-tools { display: flex; gap: 8px 14px; align-items: center; flex-wrap: wrap; }
+.map-tools .legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.legend[hidden] { display: none; }
+.show-owners .area.o-player { --f: var(--f-player); } .show-owners .area.o-elder { --f: var(--f-elder); }
+.show-owners .area.o-exam { --f: var(--f-exam); } .show-owners .area.o-pe { --f: var(--f-pe); }
+.show-owners .area.o-innov { --f: var(--f-innov); } .show-owners .area.o-none, .show-owners .area.o-neutral { --f: var(--f-none); }
+.show-owners .area[class*="o-"] { fill: color-mix(in srgb, var(--f) 42%, transparent); stroke: var(--f); stroke-width: 3; }
+.show-owners .area[class*="o-"]:hover, .show-owners .area[class*="o-"]:focus-visible { fill: color-mix(in srgb, var(--f) 62%, transparent); stroke: var(--area-stroke); }

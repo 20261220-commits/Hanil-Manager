@@ -436,7 +436,7 @@ function baseballSegment(m, rng) {
       addStat(bat, id, 'pa');
       // 투수 피로: 상대한 타자가 (15 + 체력)을 넘으면 타자마다 ×0.97, 85% 밑이면 후보 투수로 교체
       pit.faced++;
-      if (pit.faced > 15 + stat(fld.players[pit.id], '체력')) pit.fatigue *= 0.97;
+      if (pit.faced > 15 + stat(fld.players[pit.id], '체력')) pit.fatigue = Math.max(0.7, pit.fatigue * 0.97);
       const rpEntry = fld.lineup.find((l) => l.pos === 'RP');
       if (pit.fatigue < 0.85 && !pit.relieved && rpEntry) {
         m.log.push({ seg: m.seg, side: 1 - bi, text: `${inning}회: ${fld.players[pit.id].name} 지쳐서 강판, 후보 투수 ${fld.players[rpEntry.id].name} 등판` });
@@ -492,15 +492,17 @@ function baseballSegment(m, rng) {
     halfInning(0, inning);
     if (!(inning >= 9 && m.score[1] + seg[1] > m.score[0] + seg[0])) halfInning(1, inning);
     m.innings = inning;
+    // 콜드게임: 5회 이후 10점 차 이상이면 경기 종료 (고교 야구 규칙)
+    if (inning >= 5 && Math.abs(m.score[0] + seg[0] - m.score[1] - seg[1]) >= 10) m.called = true;
   };
-  for (let k = 1; k <= 3; k++) playInning(m.seg * 3 + k);
+  for (let k = 1; k <= 3 && !m.called; k++) playInning(m.seg * 3 + k);
   // 동점이면 12회까지 연장, 그래도 같으면 무승부
   if (m.seg === 2) {
     let inning = 9;
     while (m.score[0] + seg[0] === m.score[1] + seg[1] && inning < 12) { inning++; playInning(inning); }
   }
   m.score[0] += seg[0]; m.score[1] += seg[1];
-  m.log.push({ seg: m.seg, side: null, text: `${SPORTS.baseball.segs[m.seg]} ${seg[0]}:${seg[1]} (합계 ${m.score[0]}:${m.score[1]}${m.seg === 2 && m.innings > 9 ? `, ${m.innings}회 연장` : ''})` });
+  m.log.push({ seg: m.seg, side: null, tone: m.called ? 'goal' : undefined, text: `${SPORTS.baseball.segs[m.seg]} ${seg[0]}:${seg[1]} (합계 ${m.score[0]}:${m.score[1]}${m.seg === 2 && m.innings > 9 ? `, ${m.innings}회 연장` : ''})${m.called ? ` · ${m.innings}회 콜드게임` : ''}` });
   m.segScore.push(seg);
   drainStamina(m, 0.7);
 }
@@ -510,7 +512,7 @@ export function playSegment(m, rng) {
   rollSegmentEvents(m, rng);
   ({ soccer: soccerSegment, basketball: basketballSegment, baseball: baseballSegment })[m.sport](m, rng);
   m.seg++;
-  if (m.seg >= SPORTS[m.sport].segs.length) finishMatch(m, rng);
+  if (m.seg >= SPORTS[m.sport].segs.length || m.called) finishMatch(m, rng);
 }
 
 // ---------- 작전 타임 ----------
