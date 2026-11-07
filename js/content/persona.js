@@ -92,6 +92,16 @@ export function effectText(e, event = false) {
 }
 export const isGoodEffect = (e) => power(e) > 0;
 
+// 교사끼리의 연애·성적인 이벤트는 허용하지만, 학생이 나오는 이벤트에 성적인 표현이 섞이면 버린다.
+// (worker/src/index.js 에도 같은 검사가 있다)
+const SEXUAL = ['섹스', '성관계', '잠자리', '야한', '키스', '애무', '알몸', '나체', '속옷', '가슴', '몸매', '유혹', '스킨십', '침대', '하룻밤', '성적', '음란', '야동', '모텔'];
+const STUDENT_WORDS = ['{학생}', '학생', '제자', '반 아이', '1학년', '2학년', '3학년'];
+export function studentSexual(ev) {
+  const text = [ev.title, ev.body, ...(ev.choices ?? []).map((c) => c.label)].join(' ');
+  const hasStudent = ev.target !== 'teacher' || STUDENT_WORDS.some((w) => text.includes(w));
+  return hasStudent && SEXUAL.some((w) => text.includes(w));
+}
+
 export function sanitizeEvent(raw) {
   if (!raw || typeof raw !== 'object') return null;
   const choices = (Array.isArray(raw.choices) ? raw.choices : []).slice(0, 2).map((c) => ({
@@ -101,7 +111,8 @@ export function sanitizeEvent(raw) {
   }));
   const title = cut(raw.title, 30), body = cut(raw.body, 220);
   if (!title || !body || !choices.length) return null;
-  return { title, body, target: ['class', 'student', 'teacher'].includes(raw.target) ? raw.target : 'class', choices };
+  const ev = { title, body, target: ['class', 'student', 'teacher'].includes(raw.target) ? raw.target : 'class', choices };
+  return studentSexual(ev) ? null : ev;
 }
 
 // ---------- 키워드 규칙 (AI 서버를 쓸 수 없을 때) ----------
