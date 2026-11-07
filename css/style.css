@@ -430,3 +430,20 @@ html.text-large .roster, html.text-large .stats, html.text-large .note { font-si
 .show-owners .area.o-innov { --f: var(--f-innov); } .show-owners .area.o-none, .show-owners .area.o-neutral { --f: var(--f-none); }
 .show-owners .area[class*="o-"] { fill: color-mix(in srgb, var(--f) 42%, transparent); stroke: var(--f); stroke-width: 3; }
 .show-owners .area[class*="o-"]:hover, .show-owners .area[class*="o-"]:focus-visible { fill: color-mix(in srgb, var(--f) 62%, transparent); stroke: var(--area-stroke); }
+
+/* 교사 프로필 특성 */
+.bio-label { display: flex; justify-content: space-between; font-weight: 600; }
+.bio { font: inherit; width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); resize: vertical; line-height: 1.6; }
+.ptraits-head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.ptraits { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.ptrait { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 6px; align-content: start; background: var(--surface); }
+.ptrait header { display: flex; gap: 8px; align-items: center; }
+.ptrait b { font-size: 15px; }
+.pemoji { font-size: 20px; line-height: 1; }
+.ptrait ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; font-size: 12.5px; }
+.ptrait li::before { content: "· "; color: var(--muted); }
+.ptrait li.good { color: var(--good); } .ptrait li.bad { color: var(--bad); }
+.bio-quote { margin: 0; padding: 10px 14px; border-left: 3px solid var(--accent); background: var(--soft); border-radius: 0 8px 8px 0; font-size: 13.5px; line-height: 1.6; }
+.field { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.field input { font: inherit; color: var(--ink); padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.msg-kind.tag { color: var(--rare); border-color: var(--rare); }

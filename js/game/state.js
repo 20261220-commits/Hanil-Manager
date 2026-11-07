@@ -5,6 +5,7 @@ import { weekLabel } from './calendar.js';
 import { subjectByKey, BASE_TEACHER } from '../content/subjects.js';
 import { TITLES } from '../content/titles.js';
 import { makeSchool, extraTiles } from './school.js';
+import { applyPersona } from './persona.js';
 
 export const SLOT_COUNT = 3;
 const VERSION = 4;
@@ -118,7 +119,7 @@ export const currentSlot = () => slot;
 export function quitToTitle() { save(); state = null; slot = null; }
 
 // 새 게임: 프로필(이름, 과목, 칭호)로 교사를 만들고 담임반을 생성한다.
-export function newGame({ name, subject, title, slotN, seed = Math.floor(Math.random() * 1e9) }) {
+export function newGame({ name, subject, title, slotN, persona = null, seed = Math.floor(Math.random() * 1e9) }) {
   const rng = makeRng(seed);
   const sub = subjectByKey(subject);
   const teacher = { ...BASE_TEACHER };
@@ -135,6 +136,7 @@ export function newGame({ name, subject, title, slotN, seed = Math.floor(Math.ra
     profile: { name, subject, title, titles: [TITLES[0].name] },
   });
   slot = slotN;
+  if (persona) applyPersona(state, persona, { start: true });
   addMessage({
     kind: 'info',
     title: `입학식: ${name} 선생님, 1학년 4반 담임이 되었습니다`,

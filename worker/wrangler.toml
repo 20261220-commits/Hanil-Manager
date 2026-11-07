@@ -1,0 +1,17 @@
+# 한일고 매니저 AI 중계 서버 설정 (Cloudflare Workers)
+name = "hanil-manager-ai"
+main = "src/index.js"
+compatibility_date = "2025-06-01"
+
+[vars]
+# 쉼표로 구분한 허용 주소. 내 GitHub Pages 주소로 바꿔 주세요. 비워 두면 어디서나 요청을 받습니다.
+ALLOWED_ORIGINS = "https://YOUR-ID.github.io,https://claude.ai"
+# 쓸 Gemini 모델 (AI Studio에서 지금 쓸 수 있는 이름으로 바꿀 수 있습니다)
+GEMINI_MODEL = "gemini-2.5-flash"
+DAILY_LIMIT_PER_IP = "40"
+DAILY_LIMIT_TOTAL = "600"
+
+# 사용량을 정확히 세려면 KV를 만들고 아래 주석을 풉니다 (README 참고).
+# [[kv_namespaces]]
+# binding = "LIMITS"
+# id = "여기에_KV_ID"

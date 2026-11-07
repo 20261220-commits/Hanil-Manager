@@ -1,6 +1,6 @@
-// 이 브라우저에만 남는 화면 설정 (테마, 글자 크기)
+// 이 브라우저에만 남는 설정 (테마, 글자 크기, AI 서버 주소, 친구 코드)
 const KEY = 'hanil-manager-settings';
-const DEFAULTS = { theme: 'system', textSize: 'normal' };
+const DEFAULTS = { theme: 'system', textSize: 'normal', aiServer: '', friendCode: '' };
 
 export function getSettings() {
   try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(KEY) || '{}') }; } catch { return { ...DEFAULTS }; }

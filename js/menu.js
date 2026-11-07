@@ -6,6 +6,9 @@ import { getSettings, setSettings } from './settings.js';
 import { loadJSON } from './data.js';
 import { toast } from './chrome.js';
 import { esc } from './ui.js';
+import { bioEditor, bindBioEditor } from './persona-view.js';
+import { checkServer, serverUrl } from './ai-client.js';
+import { AI_SERVER } from './config.js';
 
 const when = (t) => (t ? new Date(t).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '');
 
@@ -53,7 +56,7 @@ export function renderTitle(app) {
             <b>이어서 플레이</b><span>${esc(sum.title)} ${esc(sum.name)} 선생님 · ${esc(sum.week)}</span></button>` : ''}
           <a class="menu-btn${sum ? '' : ' primary'}" href="#new"><b>새로 플레이</b><span>이름과 담당 과목을 정하고 시작합니다</span></a>
           <a class="menu-btn" href="#saves"><b>세이브 파일</b><span>저장 칸 ${SLOT_COUNT}개 · 불러오기, 지우기, 파일로 옮기기</span></a>
-          <a class="menu-btn" href="#settings"><b>설정</b><span>테마, 글자 크기</span></a>
+          <a class="menu-btn" href="#settings"><b>설정</b><span>테마, 글자 크기, AI 서버</span></a>
         </nav>
       </div>
     </div>`;
@@ -65,16 +68,16 @@ export function renderTitle(app) {
 
 // ---------- 새로 플레이 (프로필 만들기) ----------
 
-const draft = { step: 1, name: '', subject: null, title: TITLES[0].name, slotN: null, confirmOverwrite: false };
+const draft = { step: 1, name: '', subject: null, title: TITLES[0].name, slotN: null, confirmOverwrite: false, bio: '', traits: null, source: null, note: '', busy: false };
 
 export function resetDraft() {
-  Object.assign(draft, { step: 1, name: '', subject: null, title: TITLES[0].name, slotN: null, confirmOverwrite: false });
+  Object.assign(draft, { step: 1, name: '', subject: null, title: TITLES[0].name, slotN: null, confirmOverwrite: false, bio: '', traits: null, source: null, note: '', busy: false });
 }
 
 export function renderNewGame(app) {
   const slots = listSlots();
   if (draft.slotN === null) draft.slotN = (slots.find((x) => !x.summary) ?? slots[0]).n;
-  const steps = ['이름', '담당 과목', '칭호와 저장 칸'];
+  const steps = ['이름', '담당 과목', '어떤 선생님?', '칭호와 저장 칸'];
 
   let body = '';
   if (draft.step === 1) {
@@ -96,6 +99,11 @@ export function renderNewGame(app) {
           <span class="effect">${s.effect}</span>
         </button>`).join('')}</div>
       <p class="field-error" id="subject-error" hidden>과목을 하나 골라 주세요.</p>`;
+  } else if (draft.step === 3) {
+    body = `
+      <h2>나는 어떤 선생님인가요?</h2>
+      <p class="note">성격, 버릇, 과거, 좋아하는 것을 자유롭게 써 주세요. 글에 따라 교사 특성(장점과 약점)이 생기고, 플레이 중에 그 성격에 맞는 이벤트가 일어납니다. 비워 두면 특성 없이 시작합니다.</p>
+      ${bioEditor(draft)}`;
   } else {
     const sub = SUBJECTS.find((s) => s.key === draft.subject);
     const target = slots.find((x) => x.n === draft.slotN);
@@ -118,6 +126,7 @@ export function renderNewGame(app) {
         <span class="note">시작할 선생님</span>
         <b class="who-big">${esc(draft.title)} ${esc(draft.name)} 선생님</b>
         <span>${sub.name} 담당 · ${sub.bonus} +2 · 1학년 4반 담임</span>
+        ${draft.traits ? `<span class="note">교사 특성: ${draft.traits.map((t) => `${esc(t.emoji)} ${esc(t.name)}`).join(', ')}</span>` : ''}
       </div>
       ${draft.confirmOverwrite && target.summary ? `<p class="field-error">${draft.slotN}번 칸의 "${esc(target.summary.name)} 선생님" 기록이 지워집니다. 한 번 더 누르면 시작합니다.</p>` : ''}`;
   }
@@ -129,7 +138,7 @@ export function renderNewGame(app) {
         <form id="wizard" novalidate>${body}
           <div class="wizard-nav">
             ${draft.step === 1 ? '<a class="btn" href="#title">취소</a>' : '<button type="button" class="btn" id="back">이전</button>'}
-            <button type="submit" class="btn primary">${draft.step === 3 ? '시작하기' : '다음'}</button>
+            <button type="submit" class="btn primary" ${draft.busy ? 'disabled' : ''}>${draft.step === 4 ? '시작하기' : draft.step === 3 && !draft.bio.trim() ? '건너뛰기' : '다음'}</button>
           </div>
         </form>
       </div>
@@ -139,6 +148,7 @@ export function renderNewGame(app) {
   if (nameInput) { nameInput.focus(); nameInput.addEventListener('input', () => { draft.name = nameInput.value; }); }
   app.querySelectorAll('[data-subject]').forEach((b) => b.addEventListener('click', () => { draft.subject = b.dataset.subject; renderNewGame(app); }));
   app.querySelectorAll('[data-slot]').forEach((b) => b.addEventListener('click', () => { draft.slotN = +b.dataset.slot; draft.confirmOverwrite = false; renderNewGame(app); }));
+  bindBioEditor(app, draft, () => renderNewGame(app), { name: draft.name, subject: SUBJECTS.find((x) => x.key === draft.subject)?.name ?? '' });
   app.querySelector('#back')?.addEventListener('click', () => { draft.step -= 1; draft.confirmOverwrite = false; renderNewGame(app); });
 
   app.querySelector('#wizard').addEventListener('submit', (e) => {
@@ -148,10 +158,17 @@ export function renderNewGame(app) {
       if (!draft.name) { app.querySelector('#name-error').hidden = false; return; }
     }
     if (draft.step === 2 && !draft.subject) { app.querySelector('#subject-error').hidden = false; return; }
-    if (draft.step < 3) { draft.step += 1; renderNewGame(app); return; }
+    if (draft.step === 3) {
+      if (draft.busy) return;
+      // 글을 썼는데 특성을 아직 안 만들었으면 먼저 만든다
+      if (draft.bio.trim() && !draft.traits) { app.querySelector('#make-traits').click(); return; }
+      if (!draft.bio.trim()) { draft.traits = null; draft.source = null; }
+    }
+    if (draft.step < 4) { draft.step += 1; renderNewGame(app); return; }
     const target = slots.find((x) => x.n === draft.slotN);
     if (target.summary && !draft.confirmOverwrite) { draft.confirmOverwrite = true; renderNewGame(app); return; }
-    newGame({ name: draft.name, subject: draft.subject, title: draft.title, slotN: draft.slotN });
+    newGame({ name: draft.name, subject: draft.subject, title: draft.title, slotN: draft.slotN,
+      persona: draft.traits ? { bio: draft.bio.trim(), traits: draft.traits, source: draft.source } : null });
     resetDraft();
     location.hash = 'inbox';
   });
@@ -230,10 +247,29 @@ export function renderSettings(app) {
           <div class="segs">${opt('theme', 'system', '기기 설정 따르기', s.theme)}${opt('theme', 'light', '밝게', s.theme)}${opt('theme', 'dark', '어둡게', s.theme)}</div></fieldset>
         <fieldset class="setting"><legend>글자 크기</legend>
           <div class="segs">${opt('textSize', 'normal', '보통', s.textSize)}${opt('textSize', 'large', '크게', s.textSize)}</div></fieldset>
+        <fieldset class="setting"><legend>AI 서버 (교사 프로필 특성·이벤트)</legend>
+          <p class="note">AI 서버가 연결되면 자기소개 글을 AI가 읽고 특성과 이벤트를 만듭니다. 연결되지 않으면 키워드 규칙으로 동작합니다. API 키는 서버에만 있고 이 브라우저에는 저장되지 않습니다.</p>
+          <label class="field"><span>서버 주소</span><input id="ai-server" type="url" inputmode="url" autocomplete="off" placeholder="${esc(AI_SERVER || 'https://hanil-manager-ai.아이디.workers.dev')}" value="${esc(s.aiServer)}"></label>
+          ${AI_SERVER ? `<p class="note">비워 두면 기본 서버(${esc(AI_SERVER)})를 씁니다.</p>` : ''}
+          <label class="field"><span>친구 코드</span><input id="friend-code" type="password" autocomplete="off" placeholder="서버에 설정했을 때만" value="${esc(s.friendCode)}"></label>
+          <div class="row"><button type="button" class="btn" id="ai-check">연결 확인</button><span class="note" id="ai-status">${serverUrl() ? `지금 쓰는 서버: ${esc(serverUrl())}` : '연결된 서버 없음 (키워드 규칙)'}</span></div>
+        </fieldset>
         <p class="note">설정은 이 브라우저에 저장됩니다.</p>
       </div>
     </div>`;
   app.querySelectorAll('input[type=radio]').forEach((r) => r.addEventListener('change', () => { setSettings({ [r.name]: r.value }); toast('설정을 바꿨습니다.'); }));
+  const status = app.querySelector('#ai-status');
+  app.querySelector('#ai-server').addEventListener('change', (e) => { setSettings({ aiServer: e.target.value.trim() }); status.textContent = serverUrl() ? `지금 쓰는 서버: ${serverUrl()}` : '연결된 서버 없음 (키워드 규칙)'; });
+  app.querySelector('#friend-code').addEventListener('change', (e) => { setSettings({ friendCode: e.target.value }); });
+  app.querySelector('#ai-check').addEventListener('click', async () => {
+    setSettings({ aiServer: app.querySelector('#ai-server').value.trim(), friendCode: app.querySelector('#friend-code').value });
+    if (!serverUrl()) { status.textContent = '서버 주소를 먼저 넣어 주세요.'; return; }
+    status.textContent = '확인하는 중…';
+    try {
+      const r = await checkServer();
+      status.textContent = r.ok ? `연결됐습니다.${r.needsCode ? ' 이 서버는 친구 코드가 필요합니다.' : ''}` : '서버에 연결됐지만 API 키가 설정되지 않았습니다.';
+    } catch (err) { status.textContent = `연결하지 못했습니다: ${err.message}`; }
+  });
   return [];
 }
 

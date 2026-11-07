@@ -1,6 +1,7 @@
 // 여러 화면에서 같이 쓰는 표시 조각
 import { MORALE, FAME_STEPS } from './content/stats.js';
 import { TRAITS } from './content/traits.js';
+import { effectText, isGoodEffect } from './content/persona.js';
 
 export const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -40,3 +41,12 @@ export function fameStars(exp) {
 }
 
 export const LUCK_COLOR = { 빨: 'var(--luck-1)', 주: 'var(--luck-2)', 노: 'var(--luck-3)', 연: 'var(--luck-4)', 초: 'var(--luck-5)' };
+
+// 교사 프로필 특성 카드
+export function traitCards(traits) {
+  return `<div class="ptraits">${traits.map((t) => `
+    <article class="ptrait"><header><span class="pemoji" aria-hidden="true">${esc(t.emoji)}</span><b>${esc(t.name)}</b></header>
+      ${t.desc ? `<p class="note">${esc(t.desc)}</p>` : ''}
+      <ul>${t.effects.map((e) => `<li class="${isGoodEffect(e) ? 'good' : e.key === 'catch' ? '' : 'bad'}">${esc(effectText(e))}</li>`).join('')}</ul>
+    </article>`).join('')}</div>`;
+}

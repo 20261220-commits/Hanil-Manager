@@ -25,6 +25,9 @@
 - 반 밖의 땅: 야외 구역(운동장·골프장·광장·분리수거장)은 대결 한 번으로 점령. 운동장·무성관을 가지면 그 종목에서 홈 보정. 특별실·핵심실은 주인만 표시 (교무 정치는 다음 단계)
 - AI 계파 (룰북 7.5): 매주 계파마다 AP 5로 대결·포섭·공작(소문)·방어를 점수 순으로 실행. 계파별 성향 가중치, 시험·체육대회 시기 보정, 플레이어 위협도(점령 비율 15/30/50%), 계파 소멸. AI끼리도 싸우고, 우리 땅에 걸어 온 대결은 자동 설정·위임 판단으로 방어
 - 캠퍼스 지도: 건물마다 가장 많은 타일을 가진 세력의 색, 마우스를 대면 세력별 타일 수
+- 교사 프로필: 새로 플레이에서 자기소개를 자유롭게 쓰면 교사 특성(장점과 약점)이 생기고, 몇 주에 한 번 그 성격에 맞는 프로필 이벤트가 받은 편지함에 옴. 프로필 화면에서 학기마다 1번 고쳐 쓸 수 있음
+  - AI 중계 서버(`worker/`, Gemini)가 연결되면 AI가 글을 해석하고, 없으면 키워드 규칙으로 동작. 키는 서버에만 있음 (설치: `worker/README.md`)
+  - AI가 무엇을 돌려주든 게임은 정해진 효과 목록과 범위 안에서만 적용하고, 좋은 효과가 너무 많으면 줄임
 - 진행 상황은 이 브라우저(localStorage)의 저장 칸에 매주 자동 저장됨
 
 ## 실행
@@ -54,11 +57,14 @@ python3 -m http.server 8000
 | `js/inbox.js` | 받은 편지함 |
 | `js/plan.js` | 행동·훈련 |
 | `js/chrome.js` | 위쪽 게임 바와 알림 |
+| `js/persona-view.js` | 교사 프로필 글 입력과 특성 카드 |
+| `js/ai-client.js`, `js/config.js` | AI 중계 서버 연결 (기본 서버 주소는 `config.js`) |
+| `worker/` | AI 중계 서버 (Cloudflare Worker) |
 | `js/ui.js` | 화면 공통 조각 (별점, 사기, 욕구 막대 등) |
-| `js/game/` | 게임 로직: 난수(`rng.js`), 학생 생성(`students.js`), 저장(`state.js`), 턴 진행(`turn.js`), 달력(`calendar.js`), 반·지지도(`school.js`), 대결 엔진(`match.js`), 대결 진행(`duel.js`), AI 계파(`ai.js`) |
+| `js/game/` | 게임 로직: 난수(`rng.js`), 학생 생성(`students.js`), 저장(`state.js`), 턴 진행(`turn.js`), 달력(`calendar.js`), 반·지지도(`school.js`), 대결 엔진(`match.js`), 대결 진행(`duel.js`), AI 계파(`ai.js`), 교사 프로필 특성(`persona.js`) |
 | `js/school-view.js` | 교내 판도 화면 |
 | `js/duel-view.js` | 대결 준비·경기·결과 화면 |
-| `js/content/` | 룰북 데이터: 스탯, 성격 23종, 성향 16종, 이름, 교과목(`subjects.js`), 칭호(`titles.js`), 계파(`factions.js`), 반 밖의 땅(`places.js`) |
+| `js/content/` | 룰북 데이터: 스탯, 성격 23종, 성향 16종, 이름, 교과목(`subjects.js`), 칭호(`titles.js`), 계파(`factions.js`), 반 밖의 땅(`places.js`), 교사 특성 효과·키워드 규칙(`persona.js`) |
 | `data/campus.json` | 건물 목록과 지도 위 영역 좌표 |
 | `data/floorplans/*.json` | 건물별 평면도 타일 (좌표, 종류, 인접 정보) |
 | `assets/campus.webp` | 캠퍼스 일러스트 |

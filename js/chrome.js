@@ -1,6 +1,7 @@
 // 화면 위쪽 게임 바(주차·AP·피로·예산·신임·다음 주로)와 알림
 import { getState, unreadCount } from './game/state.js';
 import { endWeek } from './game/turn.js';
+import { deliverPersonaEvent } from './game/persona.js';
 
 let toastTimer = null;
 
@@ -35,6 +36,7 @@ export function renderGamebar() {
     const r = endWeek();
     if (!r.ok) { toast(r.msg, true); location.hash = s.duel && !s.duel.m.done ? `duel-${s.duel.classId}` : 'inbox'; return; }
     toast(r.msg);
+    deliverPersonaEvent(); // 프로필 이벤트가 예약됐으면 만들어 편지함에 넣는다 (AI는 몇 초 걸릴 수 있음)
     if (location.hash === '#inbox') window.dispatchEvent(new CustomEvent('game:changed'));
     else location.hash = 'inbox';
   });

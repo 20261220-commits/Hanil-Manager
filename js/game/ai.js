@@ -12,7 +12,7 @@ function attackerClass(s, f, t) {
   if (t.kind !== 'class') return championClass(s, f);
   return s.school.classes.find((c) => c.owner === f && c.grade === t.cls.grade) ?? null;
 }
-import { target, refusedSport, teamStrength, actualSport, homeSide, aiTactics, settle, applyToStudents, autoSetup } from './duel.js';
+import { subjectBonus, target, refusedSport, teamStrength, actualSport, homeSide, aiTactics, settle, applyToStudents, autoSetup } from './duel.js';
 import { SPORTS, createMatch, playSegment, aiTimeout } from './match.js';
 import { teacherStat } from './turn.js';
 import { FACTIONS, AI_FACTIONS, HOMEROOM_ID, classLabel } from '../content/factions.js';
@@ -188,7 +188,7 @@ function aiDuel(s, f, champ, t, attackRoster, defendRoster, rng) {
   if (defender === 'player') {
     const setup = usesHomeroom ? autoSetup(s, sport, {}) : { tactics: aiTactics(sport, rng) };
     B = { key: 'player', name: usesHomeroom ? s.className : t.team, faction: 'player', lead: teacherStat('지도력'),
-      bonus: s.profile.subject === 'pe' ? 0.05 : 0, players: defendRoster, lineup: setup.lineup, tactics: setup.tactics };
+      bonus: subjectBonus(s), players: defendRoster, lineup: setup.lineup, tactics: setup.tactics };
   } else {
     B = { key: defender, name: t.team, faction: defender, lead: t.lead, players: defendRoster, tactics: aiTactics(sport, rng) };
   }

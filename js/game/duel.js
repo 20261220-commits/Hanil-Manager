@@ -8,6 +8,7 @@ import { SPORTS, createMatch, playSegment, preTalk, aiTimeout, substitute, isUnl
 import { FACTIONS, HOMEROOM_ID, classLabel } from '../content/factions.js';
 import { makeClassRoster } from './students.js';
 import { teacherStat, shiftMorale } from './turn.js';
+import { mod } from './persona.js';
 
 export const DUEL_AP = 2;
 
@@ -51,7 +52,8 @@ export function homeSide(s, sport, attacker) {
   return venue && venue.owner === attacker ? 'attacker' : 'defender';
 }
 
-const subjectBonus = (s) => (s.profile.subject === 'pe' ? 0.05 : 0); // 체육: 반 대항전이 강한 대결
+// 교사 보정 추가분: 체육 과목(반 대항전이 강한 대결) +0.05, 교사 프로필 특성의 대결 보정
+export const subjectBonus = (s) => (s.profile.subject === 'pe' ? 0.05 : 0) + mod(s, 'duel') / 100;
 
 export function playerSide(s, draft) {
   return {

@@ -16,10 +16,10 @@ export function renderInbox(app) {
 
   const card = (m) => `
     <article class="msg k-${m.kind}${m.read ? '' : ' unread'}">
-      <header><span class="msg-kind">${KIND[m.kind] ?? '소식'}</span><h2>${esc(m.title)}</h2></header>
+      <header><span class="msg-kind">${KIND[m.kind] ?? '소식'}</span>${m.tag ? `<span class="msg-kind tag">${esc(m.tag)}</span>` : ''}<h2>${esc(m.title)}</h2></header>
       <p>${esc(m.body).replace(/\n/g, '<br>')}</p>
       ${m.choices && !m.resolved ? `<div class="choices">${m.choices.map((c) =>
-        `<button type="button" class="btn choice" data-msg="${m.id}" data-choice="${c.key}"><b>${c.label}</b><span>${c.desc}</span></button>`).join('')}</div>` : ''}
+        `<button type="button" class="btn choice" data-msg="${m.id}" data-choice="${c.key}"><b>${esc(c.label)}</b><span>${esc(c.desc)}</span></button>`).join('')}</div>` : ''}
       ${m.result ? `<p class="note">결정: ${esc(m.result)}</p>` : ''}
     </article>`;
 

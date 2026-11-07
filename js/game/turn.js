@@ -7,6 +7,7 @@ import { PERSONALITIES } from '../content/personality.js';
 import { clamp } from './rng.js';
 import { weeklySchool, semesterGoal } from './school.js';
 import { aiWeek } from './ai.js';
+import { mod, personaWeekly, resolvePersonaChoice } from './persona.js';
 
 const PERS = Object.fromEntries(PERSONALITIES.map((p) => [p.name, p]));
 const MENTAL = STAT_GROUPS[0].stats, MIND = STAT_GROUPS[1].stats, BODY = STAT_GROUPS[2].stats;
@@ -63,7 +64,7 @@ export function doCounsel(id) {
   const s = getState(), st = studentById(id);
   const err = spend(1); if (err) return fail(err);
   const rng = nextRng();
-  const p = clamp(0.5 + teacherStat('상담') * 0.025 - (s.fatigue >= 90 ? 0.2 : 0), 0.1, 0.95);
+  const p = clamp(0.5 + teacherStat('상담') * 0.025 + mod(s, 'counsel') / 100 - (s.fatigue >= 90 ? 0.2 : 0), 0.1, 0.95);
   st.lastCounsel = s.turn;
   if (rng.next() < p) {
     const need = topNeed(st);
@@ -101,7 +102,7 @@ export function doTalk(kind) {
   const s = getState();
   const err = spend(2, 'talk'); if (err) return fail(err);
   const rng = nextRng();
-  const base = 0.4 + teacherStat('동기부여') * 0.025;
+  const base = 0.4 + teacherStat('동기부여') * 0.025 + mod(s, 'talk') / 100;
   let up = 0, down = 0;
   for (const st of s.students) {
     if (st.trait === '마이웨이') continue;
@@ -153,7 +154,7 @@ export function doOvertime() {
   const s = getState();
   if (s.overtime >= 2) return fail('이번 주에는 더 야근할 수 없습니다.');
   count('overtime');
-  s.overtime += 1; s.ap += 1; s.fatigue = clamp(s.fatigue + 15, 0, 100);
+  s.overtime += 1; s.ap += 1; s.fatigue = clamp(Math.round(s.fatigue + 15 * (1 + mod(s, 'fatigue') / 100)), 0, 100);
   return done(`야근으로 AP +1. 피로 ${s.fatigue}.`);
 }
 
@@ -178,6 +179,12 @@ export function resolveDecision(msgId, choice) {
   const s = getState();
   const m = s.inbox.find((x) => x.id === msgId);
   if (!m || m.resolved) return fail('이미 처리한 일입니다.');
+  if (m.persona) {
+    const r = resolvePersonaChoice(s, m, choice);
+    if (!r) return fail('없는 선택지입니다.');
+    m.resolved = choice; m.read = true; m.result = r;
+    return done(r);
+  }
   const st = studentById(m.ref.studentId);
   let msg;
   if (choice === 'cover') {
@@ -275,7 +282,7 @@ export function endWeek() {
     const need = topNeed(st);
     const type = need === 'food' ? 'ramen' : need === 'home' ? 'phone' : need === 'recog' ? 'escape'
       : rng.pick(['chromebook', 'escape', 'gamedev', 'vuln']);
-    const pCaught = 0.2 * (1 - st.stats['절제'] * 0.02) * (1 + st.stats['기행'] * 0.02) * moodMult * strictMult * luckMult[st.luck];
+    const pCaught = 0.2 * (1 - st.stats['절제'] * 0.02) * (1 + st.stats['기행'] * 0.02) * moodMult * strictMult * luckMult[st.luck] * (1 + mod(s, 'catch') / 100);
     if (rng.next() < pCaught) {
       s.caught[type] = (s.caught[type] ?? 0) + 1;
       addMessage({
@@ -343,7 +350,8 @@ export function endWeek() {
   }
 
   // 10. 교사 피로와 다음 주 준비
-  s.fatigue = clamp(s.fatigue - 10 - s.ap * 5 - 5, 0, 100);
+  personaWeekly(s, rng); // 교사 프로필: 매주 예산, 프로필 이벤트 예약
+  s.fatigue = clamp(s.fatigue - 10 - s.ap * 5 - 5 - mod(s, 'recover'), 0, 100);
   s.warden.mood = rng.weighted([['좋음', 25], ['보통', 50], ['나쁨', 25]]);
   s.turn += 1;
   s.weekLabel = weekLabel(s.turn);
