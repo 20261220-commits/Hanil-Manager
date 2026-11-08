@@ -18,7 +18,26 @@ Gemini API 키는 이 서버에만 저장되고, 게임을 하는 친구들 브�
 
 https://dash.cloudflare.com/sign-up 에서 무료로 가입합니다. 카드 등록은 필요 없습니다.
 
-## 3. 서버 올리기
+## 3-A. 터미널 없이 올리기 (크롬북·태블릿 추천)
+
+서버 코드는 파일 하나(`src/index.js`)라서 Cloudflare 웹 화면에 붙여 넣기만 하면 됩니다.
+
+1. GitHub에서 이 저장소의 `worker/src/index.js`를 열고 **Raw**를 누른 뒤, 전체 선택(Ctrl+A)하고 복사(Ctrl+C)합니다.
+2. https://dash.cloudflare.com 에 로그인하고 왼쪽 메뉴에서 **Workers & Pages** (또는 **Compute → Workers**)로 갑니다.
+3. **만들기(Create) → Worker 만들기**를 누르고 "Hello World" 예제로 시작합니다. 이름은 `hanil-manager-ai`로 하고 **배포(Deploy)**를 누릅니다.
+4. **코드 편집(Edit code)**을 누르고, 편집기 안의 코드를 모두 지운 뒤 1번에서 복사한 코드를 붙여 넣고 **배포(Deploy)**를 누릅니다.
+5. Worker 화면의 **설정(Settings) → 변수 및 비밀(Variables and Secrets)**에서 **추가(Add)**를 눌러 아래를 넣고 배포합니다.
+
+   | 종류 | 이름 | 값 |
+   | --- | --- | --- |
+   | 비밀(Secret) | `GEMINI_API_KEY` | AI Studio에서 만든 키 |
+   | 비밀(Secret, 선택) | `FRIEND_CODE` | 친구들에게 알려 줄 암호 |
+   | 텍스트(Text) | `ALLOWED_ORIGINS` | `https://내아이디.github.io,https://claude.ai` |
+   | 텍스트(Text, 선택) | `GEMINI_MODEL` | 기본 `gemini-2.5-flash`가 없을 때만 |
+
+6. Worker 화면 위쪽에 나오는 `https://hanil-manager-ai.<서브도메인>.workers.dev` 주소가 서버 주소입니다. 4번(확인)으로 넘어갑니다.
+
+## 3-B. 터미널로 올리기
 
 터미널에서 이 저장소의 `worker` 폴더로 이동한 뒤 차례로 실행합니다.
 
