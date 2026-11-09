@@ -10,6 +10,8 @@ export const TITLES = [
   { name: '라면 단속반', how: '일탈한 학생에게 벌점이나 꾸중을 10번', check: (s) => (s.counters.strict ?? 0) >= 10 },
   { name: '승부사', how: '다른 반과의 대결에서 5번 이김', check: (s) => (s.counters.duelWin ?? 0) >= 5 },
   { name: '정복자', how: '다른 반을 처음으로 점령', check: (s) => (s.counters.conquer ?? 0) >= 1 },
+  { name: '교무실 실세', how: '우리 안건을 교무회의에서 3번 통과시킴', check: (s) => (s.counters.agendaPass ?? 0) >= 3 },
+  { name: '부장님', how: '부장 자리를 처음으로 차지함', check: (s) => (s.counters.post ?? 0) >= 1 },
   { name: '한 학기 생존자', how: '1학기를 끝까지 버팀 (여름방학 도달)', check: (s) => s.turn >= 21 },
 ];
 

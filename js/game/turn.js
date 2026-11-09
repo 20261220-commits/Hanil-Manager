@@ -8,6 +8,9 @@ import { clamp } from './rng.js';
 import { weeklySchool, semesterGoal } from './school.js';
 import { aiWeek } from './ai.js';
 import { mod, personaWeekly, resolvePersonaChoice } from './persona.js';
+import { councilWeekly, voteOnAiAgenda, ruleOn } from './politics.js';
+import { ROOM_GROWTH } from '../content/council.js';
+import { placeById } from './school.js';
 
 const PERS = Object.fromEntries(PERSONALITIES.map((p) => [p.name, p]));
 const MENTAL = STAT_GROUPS[0].stats, MIND = STAT_GROUPS[1].stats, BODY = STAT_GROUPS[2].stats;
@@ -179,6 +182,11 @@ export function resolveDecision(msgId, choice) {
   const s = getState();
   const m = s.inbox.find((x) => x.id === msgId);
   if (!m || m.resolved) return fail('이미 처리한 일입니다.');
+  if (m.council) {
+    const r = voteOnAiAgenda(s, m, choice);
+    m.resolved = choice; m.read = true; m.result = `${{ yes: '찬성', no: '반대', abstain: '기권' }[choice]} · ${r}`;
+    return done(`교무회의 결과: ${r.split(' — ')[0]}`);
+  }
   if (m.persona) {
     const r = resolvePersonaChoice(s, m, choice);
     if (!r) return fail('없는 선택지입니다.');
@@ -195,9 +203,10 @@ export function resolveDecision(msgId, choice) {
     msg = `${st.name}을(를) 감쌌습니다. 결속도가 올랐지만 사감과의 관계가 나빠졌습니다.`;
   } else if (choice === 'penalty') {
     count('strict');
-    shiftMorale(st, -1);
+    const soft = placeById(s, 'discipline')?.owner === 'player'; // 학생부장: 벌점 완화
+    if (!soft) shiftMorale(st, -1);
     s.warden.relation = clamp(s.warden.relation + 5, 0, 100);
-    msg = `${st.name}에게 벌점을 줬습니다. 사기가 떨어졌고 사감과의 관계는 좋아졌습니다.`;
+    msg = soft ? `${st.name}에게 벌점을 줬습니다. 학생부장 권한으로 가볍게 처리해 사기는 그대로입니다.` : `${st.name}에게 벌점을 줬습니다. 사기가 떨어졌고 사감과의 관계는 좋아졌습니다.`;
   } else {
     count('strict');
     shiftMorale(st, -2);
@@ -227,6 +236,18 @@ export function endWeek() {
   const t = s.training;
   const grew = [];
   const coachMult = 1 + (teacherStat('지도력') - 10) * 0.03;
+  // 학교 규칙과 우리가 맡은 특별실의 성장 보정 (교무회의)
+  const statMult = {};
+  for (const k of [...MENTAL, ...MIND, ...BODY]) {
+    let v = 1;
+    if (ruleOn(s, 'study') && MIND.includes(k)) v *= 1.1;
+    if (ruleOn(s, 'sports') && BODY.includes(k)) v *= 1.1;
+    for (const [room, g] of Object.entries(ROOM_GROWTH)) {
+      if (placeById(s, room)?.owner !== 'player') continue;
+      if ((g.group === 'mind' && MIND.includes(k)) || (g.group === 'body' && BODY.includes(k)) || g.stats?.includes(k)) v *= g.mult;
+    }
+    statMult[k] = v;
+  }
 
   for (const st of s.students) {
     // 1. 성장 (룰북 4.8)
@@ -243,6 +264,7 @@ export function endWeek() {
       if (st.trait === '헬창') share *= BODY.includes(k) ? 1.3 : MIND.includes(k) ? 0.9 : 1;
       let g = base * share * (k === p.up ? 1.1 : k === p.down ? 0.9 : 1) * (0.6 + rng.next() * 0.8);
       if (focusOn && st.focus.stat === k) g *= 3;
+      g *= statMult[k];
       st.prog[k] = (st.prog[k] ?? 0) + g;
       if (st.prog[k] >= 1 && st.stats[k] < 20) {
         st.prog[k] -= 1;
@@ -257,10 +279,10 @@ export function endWeek() {
     // 2. 욕구 증가 (룰북 4.7)
     const self = (1 - st.stats['절제'] * 0.03) * (st.personality === '성실' ? 0.8 : st.personality === '덜렁' ? 1.2 : 1);
     const add = {
-      play: rng.int(5, 11) * (st.personality === '장난' ? 1.5 : 1),
-      home: rng.int(4, 9) * (s.turn <= 20 ? 1.3 : 1) * (st.personality === '외로움 탐' ? 2 : 1),
-      grade: rng.int(2, 7) * (nearExam(s.turn) ? 2 : 1) * (st.trait === '완벽주의자' ? 1.5 : 1) * (st.personality === '무사태평' ? 0.5 : 1),
-      food: rng.int(4, 9) * (st.trait === '헬창' ? 1.5 : 1),
+      play: rng.int(5, 11) * (st.personality === '장난' ? 1.5 : 1) * (ruleOn(s, 'study') ? 1.2 : 1) * (ruleOn(s, 'sports') ? 0.85 : 1),
+      home: rng.int(4, 9) * (s.turn <= 20 ? 1.3 : 1) * (st.personality === '외로움 탐' ? 2 : 1) * (ruleOn(s, 'phone') ? 0.7 : 1),
+      grade: rng.int(2, 7) * (nearExam(s.turn) ? 2 : 1) * (st.trait === '완벽주의자' ? 1.5 : 1) * (st.personality === '무사태평' ? 0.5 : 1) * (ruleOn(s, 'study') ? 1.2 : 1),
+      food: rng.int(4, 9) * (st.trait === '헬창' ? 1.5 : 1) * (ruleOn(s, 'snack') ? 0.7 : 1),
       recog: rng.int(3, 7) * (st.stats['자존감'] <= 7 ? 1.3 : 1),
     };
     for (const k in add) st.needs[k] = clamp(Math.round(st.needs[k] + add[k] * self - t.rest * 0.1), 0, 100);
@@ -341,6 +363,7 @@ export function endWeek() {
   // 9. 교내 판도: 일상 영향력, 담당 수업, 반장 선거, 지배권 (룰북 8.2)
   if (s.duel?.m.done) s.duel = null;
   aiWeek(s, rng); // AI 계파 행동 (룰북 7.5)
+  councilWeekly(s, rng); // 교무회의 표결, AI 안건, 흡수 교사 영향력, 부장 자리 AP
   for (const msg of weeklySchool(s, rng)) addMessage(msg);
   if (s.turn === 20) {
     const g = semesterGoal(s);

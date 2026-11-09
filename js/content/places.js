@@ -25,8 +25,8 @@ export const PLACES = [
 export const PLACE_KIND = { outdoor: '야외 구역', special: '특별실', core: '핵심실', back: '뒷공간', base: '거점' };
 export const HOW_TO_TAKE = {
   outdoor: '대결에서 이기면 바로 점령',
-  special: '교무회의 투표·업무 분장 (교무 정치는 다음 단계)',
-  core: '정치력과 실적 (교무 정치는 다음 단계)',
+  special: '교무실에서 장소 담당권 안건으로',
+  core: '교무실에서 불신임 안건으로',
   back: '패도 싸움·괴담 (특수 루트에서)',
   base: '처음부터 우리 거점',
 };

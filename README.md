@@ -25,6 +25,8 @@
 - 반 밖의 땅: 야외 구역(운동장·골프장·광장·분리수거장)은 대결 한 번으로 점령. 운동장·무성관을 가지면 그 종목에서 홈 보정. 특별실·핵심실은 주인만 표시 (교무 정치는 다음 단계)
 - AI 계파 (룰북 7.5): 매주 계파마다 AP 5로 대결·포섭·공작(소문)·방어를 점수 순으로 실행. 계파별 성향 가중치, 시험·체육대회 시기 보정, 플레이어 위협도(점령 비율 15/30/50%), 계파 소멸. AI끼리도 싸우고, 우리 땅에 걸어 온 대결은 자동 설정·위임 판단으로 방어
 - 캠퍼스 지도: 건물마다 가장 많은 타일을 가진 세력의 색, 마우스를 대면 세력별 타일 수
+- 교무실 (교무 정치): 교사 26명이 계파별로 한 표씩. 안건 발의(2 AP: 특별실 담당권·학교 규칙·부장 불신임·운영비 증액) → 계파별 사전 교섭(1 AP) → 주말 교무회의 표결. 매달 AI 계파도 안건을 올리고 우리는 찬반을 정함. 교사 포섭(3 AP, 실패하면 그 계파와 적대), 계파 관계, 부장 자리(AP 6·7, 교무부장은 담당 수업 반 선택, 학생부장은 벌점 완화, 진로부장은 명성), 우리가 맡은 특별실의 성장 보너스, 학교 규칙 4종의 효과
+- 화면: 왼쪽 사이드 메뉴 (캠퍼스·담임반·교내 판도·교무실·받은 편지함·행동·훈련·프로필·저장하고 메뉴로), 새 게임과 이어서 플레이는 캠퍼스에서 시작
 - 교사 프로필: 새로 플레이에서 자기소개를 자유롭게 쓰면 교사 특성(장점과 약점)이 생기고, 몇 주에 한 번 그 성격에 맞는 프로필 이벤트가 받은 편지함에 옴. 프로필 화면에서 학기마다 1번 고쳐 쓸 수 있음
   - AI 중계 서버(`worker/`, Gemini)가 연결되면 AI가 글을 해석하고, 없으면 키워드 규칙으로 동작. 키는 서버에만 있음 (설치: `worker/README.md`)
   - AI가 무엇을 돌려주든 게임은 정해진 효과 목록과 범위 안에서만 적용하고, 좋은 효과가 너무 많으면 줄임
@@ -46,7 +48,7 @@ python3 -m http.server 8000
 | --- | --- |
 | `index.html` | 진입점 |
 | `css/style.css` | 화면 스타일 (라이트·다크 테마) |
-| `js/main.js` | 화면 전환 (게임 밖: `#title`, `#new`, `#saves`, `#settings` / 게임 안: `#campus`, `#b-<건물 id>`, `#class`, `#s-<학생 id>`, `#school`, `#duel-<반 id>`, `#inbox`, `#plan`, `#profile`) |
+| `js/main.js` | 화면 전환 (게임 밖: `#title`, `#new`, `#saves`, `#settings` / 게임 안: `#campus`, `#b-<건물 id>`, `#class`, `#s-<학생 id>`, `#school`, `#duel-<반 id>`, `#office`, `#inbox`, `#plan`, `#profile`) |
 | `js/menu.js` | 로딩, 대기 화면, 새로 플레이, 세이브 파일, 설정 화면 |
 | `js/profile.js` | 교사 프로필과 칭호 선택 |
 | `js/settings.js` | 설정 저장과 적용 |
@@ -61,10 +63,11 @@ python3 -m http.server 8000
 | `js/ai-client.js`, `js/config.js` | AI 중계 서버 연결 (기본 서버 주소는 `config.js`) |
 | `worker/` | AI 중계 서버 (Cloudflare Worker) |
 | `js/ui.js` | 화면 공통 조각 (별점, 사기, 욕구 막대 등) |
-| `js/game/` | 게임 로직: 난수(`rng.js`), 학생 생성(`students.js`), 저장(`state.js`), 턴 진행(`turn.js`), 달력(`calendar.js`), 반·지지도(`school.js`), 대결 엔진(`match.js`), 대결 진행(`duel.js`), AI 계파(`ai.js`), 교사 프로필 특성(`persona.js`) |
+| `js/game/` | 게임 로직: 난수(`rng.js`), 학생 생성(`students.js`), 저장(`state.js`), 턴 진행(`turn.js`), 달력(`calendar.js`), 반·지지도(`school.js`), 대결 엔진(`match.js`), 대결 진행(`duel.js`), AI 계파(`ai.js`), 교사 프로필 특성(`persona.js`), 교무 정치(`politics.js`) |
 | `js/school-view.js` | 교내 판도 화면 |
+| `js/office-view.js` | 교무실 화면 |
 | `js/duel-view.js` | 대결 준비·경기·결과 화면 |
-| `js/content/` | 룰북 데이터: 스탯, 성격 23종, 성향 16종, 이름, 교과목(`subjects.js`), 칭호(`titles.js`), 계파(`factions.js`), 반 밖의 땅(`places.js`), 교사 특성 효과·키워드 규칙(`persona.js`) |
+| `js/content/` | 룰북 데이터: 스탯, 성격 23종, 성향 16종, 이름, 교과목(`subjects.js`), 칭호(`titles.js`), 계파(`factions.js`), 반 밖의 땅(`places.js`), 교사 특성 효과·키워드 규칙(`persona.js`), 교무회의 안건·규칙·부장 자리(`council.js`) |
 | `data/campus.json` | 건물 목록과 지도 위 영역 좌표 |
 | `data/floorplans/*.json` | 건물별 평면도 타일 (좌표, 종류, 인접 정보) |
 | `assets/campus.webp` | 캠퍼스 일러스트 |

@@ -33,7 +33,7 @@ export function renderSchool(app) {
       <td class="note">${esc(info.bonus)}</td>
       <td>${info.kind === 'outdoor' && p.owner !== 'player'
         ? (block ? `<span class="note">${esc(block)}</span>` : `<a class="btn small primary" href="#duel-${p.id}">대결 신청 (${DUEL_AP} AP)</a>`)
-        : `<span class="note">${p.owner === 'player' ? '우리 땅' : HOW_TO_TAKE[info.kind]}</span>`}</td></tr>`;
+        : p.owner === 'player' ? '<span class="note">우리 땅</span>' : (info.kind === 'special' || (info.kind === 'core' && p.id !== 'principal')) ? `<a class="btn small" href="#office">${HOW_TO_TAKE[info.kind]}</a>` : `<span class="note">${p.id === 'principal' ? '다른 타일을 모두 점령하면' : HOW_TO_TAKE[info.kind]}</span>`}</td></tr>`;
   };
 
   const card = (c) => {

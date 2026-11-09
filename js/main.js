@@ -1,6 +1,6 @@
 // 화면 전환
 // 게임 밖: #title 대기 화면 · #new 새로 플레이 · #saves 세이브 파일 · #settings 설정
-// 게임 안: #campus 캠퍼스 · #b-<건물> 평면도 · #class 담임반 · #s-<학생> 학생 · #school 교내 판도 · #duel-<반> 대결
+// 게임 안: #campus 캠퍼스 · #b-<건물> 평면도 · #class 담임반 · #s-<학생> 학생 · #school 교내 판도 · #duel-<반> 대결 · #office 교무실
 //          #inbox 받은 편지함 · #plan 행동·훈련 · #profile 프로필
 import { renderCampus } from './campus.js';
 import { renderBuilding } from './building.js';
@@ -11,8 +11,9 @@ import { renderPlan } from './plan.js';
 import { renderProfile } from './profile.js';
 import { renderSchool } from './school-view.js';
 import { renderDuel } from './duel-view.js';
+import { renderOffice } from './office-view.js';
 import { renderLoading, renderTitle, renderNewGame, renderSaves, renderSettings, resetDraft } from './menu.js';
-import { renderGamebar } from './chrome.js';
+import { renderGamebar, toast } from './chrome.js';
 import { isPlaying, quitToTitle, migrateOldSave } from './game/state.js';
 import { applySettings } from './settings.js';
 
@@ -26,7 +27,7 @@ async function route({ keepScroll = false } = {}) {
     // 게임 밖 화면
     if (MENU[hash] || !isPlaying()) {
       const name = MENU[hash] ? hash : 'title';
-      if (name === 'title' && isPlaying()) quitToTitle();
+      if (name === 'title' && isPlaying()) { quitToTitle(); toast('저장했습니다.'); }
       if (name !== 'new') resetDraft();
       if (location.hash.slice(1) !== name) { history.replaceState(null, '', `#${name}`); }
       document.body.dataset.mode = 'menu';
@@ -44,6 +45,7 @@ async function route({ keepScroll = false } = {}) {
     else if (hash.startsWith('s-')) crumbs = renderStudent(app, hash.slice(2));
     else if (hash === 'school') crumbs = renderSchool(app);
     else if (hash.startsWith('duel-')) crumbs = renderDuel(app, hash.slice(5));
+    else if (hash === 'office') crumbs = renderOffice(app);
     else if (hash === 'inbox') crumbs = renderInbox(app);
     else if (hash === 'plan') crumbs = renderPlan(app);
     else if (hash === 'profile') crumbs = renderProfile(app);
@@ -53,7 +55,7 @@ async function route({ keepScroll = false } = {}) {
       (i ? '<span aria-hidden="true">›</span>' : '') +
       (c.href ? `<a href="${c.href}">${c.label}</a>` : `<span aria-current="page">${c.label}</span>`)).join('');
     crumbsEl.hidden = crumbs.length < 2;
-    const section = hash === 'class' || hash.startsWith('s-') ? 'class' : hash === 'school' || hash.startsWith('duel-') ? 'school' : ['inbox', 'plan', 'profile'].includes(hash) ? hash : 'campus';
+    const section = hash === 'class' || hash.startsWith('s-') ? 'class' : hash === 'school' || hash.startsWith('duel-') ? 'school' : ['inbox', 'plan', 'profile', 'office'].includes(hash) ? hash : 'campus';
     document.querySelectorAll('.mainnav a').forEach((a) => a.setAttribute('aria-current', String(a.dataset.section === section)));
     renderGamebar();
     if (!keepScroll) window.scrollTo(0, 0);

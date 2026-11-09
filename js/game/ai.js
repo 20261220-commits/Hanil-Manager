@@ -71,6 +71,8 @@ export function aiWeek(s, rng) {
   for (const f of rng.shuffle(AI_FACTIONS)) {
     if (sc.ai.gone[f]) continue;
     const w = WEIGHTS[f];
+    // 교무실에서 사이가 나빠진 계파(관계 -40 이하)는 우리를 더 노린다 (적대 계파 대상 행동 ×1.3)
+    const hostile = (sc.rel?.[f] ?? 0) <= -40 ? 1.3 : 1;
     let ap = AP;
     let duels = 0;
     for (let step = 0; step < 6 && ap > 0; step++) {
@@ -91,7 +93,7 @@ export function aiWeek(s, rng) {
           // 담임반은 빼앗을 수 없는 반이라 노릴 가치가 낮다
           const val = t.kind === 'class' ? (t.id === HOMEROOM_ID ? 4 : 10) : 15;
           const inst = t.kind === 'class' ? 1 + Math.max(0, 60 - t.cls.support[t.owner]) / 30 + t.cls.support[f] / 50 : 1;
-          const score = val * w.duel * inst * ratio(f, champ, t) ** 4 * tmul * (t.owner === 'player' ? th.mult : 1);
+          const score = val * w.duel * inst * ratio(f, champ, t) ** 4 * tmul * (t.owner === 'player' ? th.mult * hostile : 1);
           cands.push({ type: 'duel', t, champ, score });
         }
       }
@@ -99,7 +101,7 @@ export function aiWeek(s, rng) {
       if (ap >= COST.recruit) {
         for (const c of sc.classes) {
           if (c.owner === f || c.support[f] < 8 || c.support[f] > 55) continue;
-          const score = 10 * w.recruit * (c.support[f] / 30) * (c.owner === 'none' ? 1.2 : 1) * (c.owner === 'player' ? th.mult : 1);
+          const score = 10 * w.recruit * (c.support[f] / 30) * (c.owner === 'none' ? 1.2 : 1) * (c.owner === 'player' ? th.mult * hostile : 1);
           cands.push({ type: 'recruit', c, score });
         }
       }
@@ -107,7 +109,7 @@ export function aiWeek(s, rng) {
       if (ap >= COST.scheme) {
         for (const c of sc.classes) {
           if (c.owner === f || c.owner === 'none' || c.id === HOMEROOM_ID) continue;
-          const score = 5 * w.scheme * (c.support[c.owner] < 60 ? 1.3 : 1) * (c.owner === 'player' ? th.mult : 1);
+          const score = 5 * w.scheme * (c.support[c.owner] < 60 ? 1.3 : 1) * (c.owner === 'player' ? th.mult * hostile : 1);
           cands.push({ type: 'scheme', c, score });
         }
       }

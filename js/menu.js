@@ -170,7 +170,7 @@ export function renderNewGame(app) {
     newGame({ name: draft.name, subject: draft.subject, title: draft.title, slotN: draft.slotN,
       persona: draft.traits ? { bio: draft.bio.trim(), traits: draft.traits, source: draft.source } : null });
     resetDraft();
-    location.hash = 'inbox';
+    location.hash = 'campus';
   });
   return [];
 }

@@ -6,6 +6,7 @@ import { subjectByKey, BASE_TEACHER } from '../content/subjects.js';
 import { TITLES } from '../content/titles.js';
 import { makeSchool, extraTiles } from './school.js';
 import { applyPersona } from './persona.js';
+import { ensureCouncil, apMaxFor } from './politics.js';
 
 export const SLOT_COUNT = 3;
 const VERSION = 4;
@@ -43,6 +44,8 @@ function upgrade(s) {
   s.profile ??= { name: '이름 없는', subject: null, title: TITLES[0].name, titles: [TITLES[0].name] };
   s.school ??= makeSchool(s.seed, s.profile.name);
   if (!s.school.places) Object.assign(s.school, extraTiles());
+  ensureCouncil(s);
+  s.apMax = apMaxFor(s);
   s.duel ??= null;
   for (const st of s.students) {
     st.prog ??= {};
