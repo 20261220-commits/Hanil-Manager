@@ -64,7 +64,7 @@ export function aiWeek(s, rng) {
     const k = `${f}|${t.id}`;
     if (!ratios.has(k)) {
       const a = rosterFor(champ), b = defenderRoster(t);
-      ratios.set(k, Object.keys(SPORTS).reduce((acc, sp) => acc + teamStrength(a, sp) / teamStrength(b, sp), 0) / 3);
+      ratios.set(k, ['soccer', 'basketball', 'baseball'].reduce((acc, sp) => acc + teamStrength(a, sp) / teamStrength(b, sp), 0) / 3);
     }
     return ratios.get(k);
   };
@@ -180,9 +180,10 @@ function aiDuel(s, f, champ, t, attackRoster, defendRoster, rng) {
   const defender = t.owner;
   const refused = refusedSport(s, { ...t, roster: () => defendRoster }, attackRoster);
   let best = null;
-  for (const sport of Object.keys(SPORTS)) {
+  // 반 대항전 3종목 + 토론 (행사 기획은 준비 기간이 필요해서 AI는 쓰지 않는다). 원로 교사는 토론을 좋아한다
+  for (const sport of ['soccer', 'basketball', 'baseball', 'debate']) {
     if (sport === refused) continue;
-    const r = teamStrength(attackRoster, sport) / teamStrength(defendRoster, sport);
+    const r = teamStrength(attackRoster, sport) / teamStrength(defendRoster, sport) * (f === 'elder' && sport === 'debate' ? 1.1 : 1);
     if (!best || r > best.r) best = { sport, r };
   }
   const sport = actualSport(s, best.sport);

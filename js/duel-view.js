@@ -1,7 +1,10 @@
 // 대결 화면: 종목 고르기 → 명단·전술·훈화 → 구간 진행과 작전 타임 → 결과 (룰북 9장)
 import { getState } from './game/state.js';
 import { SPORTS, isUnlocked, fit, POS_LABEL } from './game/match.js';
-import { target, challengeBlock, refusedSport, preview, autoSetup, beginDuel, nextSegment, setDuelTactic, duelSub, closeDuel, actualSport, homeSide, DUEL_AP } from './game/duel.js';
+import { target, challengeBlock, refusedSport, preview, autoSetup, beginDuel, nextSegment, setDuelTactic, duelSub, closeDuel, actualSport, homeSide, DUEL_AP,
+  scout, scouted, judgeOf, audienceOf, oppTacticsOf, SCOUT_AP, scheduleEvent, investPrep, prepGain, EVENT_INVEST_AP, EVENT_INVEST_MONEY, EVENT_MONEY_CAP } from './game/duel.js';
+import { JUDGE_LABEL, AUDIENCES } from './game/match.js';
+import { weekLabel } from './game/calendar.js';
 import { FACTIONS } from './content/factions.js';
 import { PERSONALITIES, TALKS } from './content/personality.js';
 import { notify, toast } from './chrome.js';
@@ -34,7 +37,9 @@ export function renderDuel(app, classId) {
 
 function renderSetup(app, s, cls) {
   if (!draft || draft.classId !== cls.id) draft = { classId: cls.id, sport: null, tactics: null, lineup: null, talk: 1 };
+  if (s.school.preps?.[cls.id]) { renderPrep(app, s, cls); return; }
   const block = challengeBlock(s, cls);
+  const seen = scouted(s, cls.id);
   const refused = refusedSport(s, cls);
   const head = `
     <div class="bhead"><div><span class="badge">${esc(s.weekLabel)}</span><h1>${esc(cls.label)}에 도전</h1></div>
@@ -51,13 +56,17 @@ function renderSetup(app, s, cls) {
     return;
   }
 
-  // 1. 종목
+  // 1. 종목 (반 대항전 3종목 · 토론 · 행사 기획)
+  const GROUP = { sport: '반 대항전', debate: '토론', event: '행사 기획' };
   const sportCards = Object.entries(SPORTS).map(([key, sp]) => {
     const no = key === refused;
     const real = actualSport(s, key);
     const pv = no ? null : cachedPreview(s, cls, key);
+    const extraNote = key === 'debate' ? ` · 심사위원 ${seen ? JUDGE_LABEL[judgeOf(s, cls)].split(' (')[0] : '? (상대 분석으로 확인)'}`
+      : key === 'event' ? ` · ${SPORTS.event.prepWeeks}주 준비 후 대결 · 관객 ${audienceOf(s, cls)}` : '';
     return `<button type="button" class="sport ${draft.sport === key ? 'is-on' : ''}" data-sport="${key}" ${no ? 'disabled' : ''}>
-      <b>${sp.name}</b><span class="note">${sp.venue}${real !== key ? ' · 비가 와서 농구로 진행' : ''}${!no && homeSide(s, real, 'player') === 'attacker' ? ' · 우리 경기장이라 우리가 홈' : ''}</span>
+      <span class="note">${GROUP[sp.group]}</span>
+      <b>${sp.name}</b><span class="note">${sp.venue}${real !== key ? ' · 비가 와서 농구로 진행' : ''}${!no && homeSide(s, real, 'player') === 'attacker' ? ' · 우리 경기장이라 우리가 홈' : ''}${extraNote}</span>
       ${no ? `<span class="warn-text">${FACTIONS[cls.owner].short} 쪽이 거부한 종목</span>`
         : `<span>예상 승률 <b>${pct(pv.low)}~${pct(pv.high)}</b>${pv.draw > 0.05 ? ` <span class="note">무승부 ${pct(pv.draw)}</span>` : ''}</span>`}
     </button>`;
@@ -68,7 +77,7 @@ function renderSetup(app, s, cls) {
     const sport = actualSport(s, draft.sport);
     const sp = SPORTS[sport];
     if (!draft.lineup || draft.forSport !== sport) {
-      Object.assign(draft, autoSetup(s, sport, {}), { forSport: sport });
+      Object.assign(draft, autoSetup(s, sport, {}, cls), { forSport: sport });
     }
     const inLineup = new Set(draft.lineup.map((l) => l.id));
     const bench = s.students.filter((st) => !inLineup.has(st.id));
@@ -80,8 +89,10 @@ function renderSetup(app, s, cls) {
       <section class="panel">
         <div class="row between"><h2>2. 전술 <span class="note">${sp.name}</span></h2>
           <button type="button" class="btn" id="auto">자동 설정</button></div>
-        <p class="note">자동 설정은 학생마다 가장 잘 맞는 자리에 넣고, 쓸 수 있는 전술을 모두 시험해 승률이 가장 높은 조합을 고릅니다. 스포츠를 몰라도 이 버튼만 누르면 됩니다.</p>
+        <p class="note">자동 설정은 학생마다 가장 잘 맞는 자리에 넣고, 쓸 수 있는 전술을 모두 시험해 승률이 가장 높은 조합을 고릅니다. 종목을 몰라도 이 버튼만 누르면 됩니다.</p>
         ${tacticSelects(sp, draft.tactics, true)}
+        ${sport === 'debate' ? `<p class="note">상성: 논리형 > 공격형 > 감성형 > 논리형 (유리 ×1.15, 불리 ×0.90). 심사위원 성향과 같은 스타일은 ×1.10.${seen ? ` 이번 주 심사위원: <b>${JUDGE_LABEL[judgeOf(s, cls)]}</b> · 상대 스타일: <b>${oppTacticsOf(s, cls, 'debate').style}</b>` : ''}</p>` : ''}
+        ${sport === 'event' ? `<p class="note">관객: <b>${audienceOf(s, cls)}</b> (맞는 콘셉트: ${AUDIENCES[audienceOf(s, cls)]}, 맞으면 ×1.15 · 안 맞으면 ×0.90). 콘셉트와 명단은 날짜를 잡을 때 정해지고, 준비 기간 동안 준비도를 쌓습니다.</p>` : ''}
       </section>
       <section class="panel">
         <h2>3. 명단 <span class="note">자리를 바꾸면 그 학생과 자리를 맞바꿉니다 · 적합도는 그 자리 가중치로 낸 점수</span></h2>
@@ -98,22 +109,25 @@ function renderSetup(app, s, cls) {
         <div class="segs">${[['없음', null], ...TALKS.map((t, i) => [t, i])].map(([name, i]) => `<label class="seg"><input type="radio" name="talk" value="${i ?? ''}" ${draft.talk === i ? 'checked' : ''}><span>${name}${i !== null ? ` · ◎ ${talkCount[i].good} ✕ ${talkCount[i].bad}` : ''}</span></label>`).join('')}</div>
         <p class="note">압박은 승부욕·적극성, 격려는 사기, 침착은 평정심·집중력을 올립니다. ✕인 학생에게는 역효과가 납니다.</p>
       </section>
-      <div class="row end"><button type="button" class="btn primary big" id="start" ${s.ap < DUEL_AP ? 'disabled' : ''}>경기 시작 (${DUEL_AP} AP)</button></div>`;
+      <div class="row end"><button type="button" class="btn primary big" id="start" ${s.ap < DUEL_AP ? 'disabled' : ''}>${sport === 'event' ? `행사 날짜 잡기 (${DUEL_AP} AP, ${SPORTS.event.prepWeeks}주 뒤)` : `경기 시작 (${DUEL_AP} AP)`}</button></div>`;
   }
 
   app.innerHTML = `${head}
-    <section class="panel"><h2>1. 종목</h2>
+    <section class="panel"><div class="row between"><h2>1. 종목</h2>
+        ${seen ? '<span class="pill good">상대 분석 완료</span>' : `<button type="button" class="btn small" id="scout" ${s.ap < SCOUT_AP ? 'disabled' : ''}>상대 분석 (${SCOUT_AP} AP)</button>`}</div>
       <div class="sport-grid">${sportCards}</div>
+      ${seen && draft.sport && SPORTS[draft.sport].group !== 'event' ? `<p class="note">상대 분석: 이번 주 ${SPORTS[actualSport(s, draft.sport)].name} 전술은 <b>${Object.values(oppTacticsOf(s, cls, actualSport(s, draft.sport))).join(' · ')}</b></p>` : ''}
       <p class="note">도전받는 쪽은 한 종목을 거부할 수 있습니다 (무소속은 거부하지 않음). 예상 승률은 교사 안목으로 어림한 값이라, 안목이 낮으면 범위가 넓고 틀릴 수 있습니다. 경기 당일 컨디션 때문에 이변도 자주 납니다.</p>
     </section>${prep}`;
 
+  app.querySelector('#scout')?.addEventListener('click', () => { const r = scout(cls.id); if (r.ok) draft.lineup = null; notify(r); });
   app.querySelectorAll('[data-sport]').forEach((b) => b.addEventListener('click', () => {
     draft.sport = b.dataset.sport; draft.lineup = null; draft.tactics = null;
     rerender();
   }));
   if (!draft.sport) return;
   app.querySelector('#auto').addEventListener('click', () => {
-    Object.assign(draft, autoSetup(s, draft.forSport, {}));
+    Object.assign(draft, autoSetup(s, draft.forSport, {}, cls));
     toast('자동 설정을 마쳤습니다.');
     rerender();
   });
@@ -132,10 +146,44 @@ function renderSetup(app, s, cls) {
   }));
   app.querySelectorAll('input[name=talk]').forEach((r) => r.addEventListener('change', () => { draft.talk = r.value === '' ? null : +r.value; }));
   app.querySelector('#start').addEventListener('click', () => {
-    const r = beginDuel(cls.id, draft.sport, { lineup: draft.lineup.map((l) => ({ ...l })), tactics: { ...draft.tactics }, talk: draft.talk });
+    const plan = { lineup: draft.lineup.map((l) => ({ ...l })), tactics: { ...draft.tactics }, talk: draft.talk };
+    const r = draft.forSport === 'event' ? scheduleEvent(cls.id, plan) : beginDuel(cls.id, draft.sport, plan);
     if (r.ok) draft = null;
     notify(r);
   });
+}
+
+// 행사 기획 준비 화면 (3주)
+function renderPrep(app, s, cls) {
+  const prep = s.school.preps[cls.id];
+  const day = s.turn >= prep.due;
+  const spent = prep.money[s.turn] ?? 0;
+  const match = AUDIENCES[prep.audience] === prep.tactics.concept;
+  app.innerHTML = `
+    <div class="bhead"><div><span class="badge">${esc(s.weekLabel)}</span><h1>${esc(cls.label)} 행사 기획 대결</h1></div>
+      <div class="duel-opp">${factionChip(cls.owner)} <span class="note">행사일 ${weekLabel(prep.due)}${day ? ' · 오늘' : ` · ${prep.due - s.turn}주 남음`}</span></div></div>
+    <section class="panel ${day ? 'agenda' : ''}">
+      <div class="row between"><h2>준비도 ${prep.readiness} / 100</h2><span class="note">준비도 배율 ×${(0.7 + prep.readiness * 0.004).toFixed(2)} (0.70 ~ 1.10)</span></div>
+      <span class="meter wide ${prep.readiness >= 70 ? 'ok' : prep.readiness >= 40 ? 'mid' : 'warn'}"><i style="width:${prep.readiness}%"></i></span>
+      ${day ? '<p>행사 당일입니다. 무대에 올리세요. 이번 주에 치르지 않으면 주말에 자동으로 치릅니다.</p>' : `
+      <p class="note">매주 자동으로 +${prepGain(s, prep)} (기획 담당 기획력 + 운영 담당 실행력, 총괄 통솔). 더 쌓으려면:</p>
+      <div class="row">
+        <button type="button" class="btn" id="inv-ap" ${s.ap < EVENT_INVEST_AP || prep.readiness >= 100 ? 'disabled' : ''}>준비 지도 (${EVENT_INVEST_AP} AP, +10)</button>
+        <button type="button" class="btn" id="inv-money" ${s.budget < EVENT_INVEST_MONEY || spent + EVENT_INVEST_MONEY > EVENT_MONEY_CAP || prep.readiness >= 100 ? 'disabled' : ''}>준비 투자 (${EVENT_INVEST_MONEY}만원, +10)</button>
+        <span class="note">이번 주 투자 ${spent} / ${EVENT_MONEY_CAP}만원 · 예산 ${s.budget}만원</span>
+      </div>`}
+      <p class="note">관객 <b>${prep.audience}</b> · 우리 콘셉트 <b>${prep.tactics.concept}</b> ${match ? '<span class="pill good">관객과 맞음 ×1.15</span>' : '<span class="pill warn">관객과 안 맞음 ×0.90</span>'}
+        · 상대 준비도 ${scouted(s, cls.id) ? `<b>${prep.oppReady}</b>` : '? (상대 분석으로 확인)'}</p>
+      ${scouted(s, cls.id) ? '' : `<button type="button" class="btn small" id="scout" ${s.ap < SCOUT_AP ? 'disabled' : ''}>상대 분석 (${SCOUT_AP} AP)</button>`}
+    </section>
+    <section class="panel"><h2>무대에 설 학생</h2>
+      <div class="table-wrap"><table class="roster plain"><tbody>${prep.lineup.map((l) => { const st = byId(s, l.id); return `<tr><td>${POS_LABEL[l.pos]}</td><td><b>${esc(st.name)}</b></td><td class="num">${one(fit(st, l.pos))}</td><td class="num">${st.condition}%</td></tr>`; }).join('')}</tbody></table></div>
+    </section>
+    ${day ? '<div class="row end"><button type="button" class="btn primary big" id="go">행사 시작 ▶</button></div>' : ''}`;
+  app.querySelector('#inv-ap')?.addEventListener('click', () => notify(investPrep(cls.id, 'ap')));
+  app.querySelector('#inv-money')?.addEventListener('click', () => notify(investPrep(cls.id, 'money')));
+  app.querySelector('#scout')?.addEventListener('click', () => notify(scout(cls.id)));
+  app.querySelector('#go')?.addEventListener('click', () => notify(beginDuel(cls.id, 'event', {})));
 }
 
 const byId = (s, id) => s.students.find((x) => x.id === id);
@@ -195,7 +243,7 @@ function renderMatch(app, s, cls) {
   }
 
   app.innerHTML = `
-    <div class="bhead"><div><span class="badge">${sp.name} · ${sp.venue}${d.asked !== d.sport ? ' (비 때문에 종목 변경)' : ''}</span><h1>${esc(A.name)} 대 ${esc(B.name)}</h1></div>
+    <div class="bhead"><div><span class="badge">${sp.name} · ${sp.venue}${d.asked !== d.sport ? ' (비 때문에 종목 변경)' : ''}${m.judge ? ` · 심사위원: ${JUDGE_LABEL[m.judge]}` : ''}${m.audience ? ` · 관객: ${m.audience} · 준비도 ${A.readiness ?? '-'} 대 ${B.readiness ?? '-'}` : ''}</span><h1>${esc(A.name)} 대 ${esc(B.name)}</h1></div>
       <div class="duel-opp">${factionChip('player', '우리')} ${factionChip(d.result?.owner ?? cls.owner)}</div></div>
     <section class="scoreboard">
       <div class="team ours"><span>${esc(A.name)}</span><span class="note">${A.home ? '홈' : '원정'} · 당일 컨디션 ${tag(A.form)}</span></div>
@@ -220,6 +268,7 @@ const tag = (f) => (f >= 1.12 ? '아주 좋음' : f >= 1.04 ? '좋음' : f > 0.9
 const tacticsText = (t) => Object.values(t).join(' · ');
 
 function statLine(sport, st = {}) {
+  if (sport === 'debate' || sport === 'event') return st.won ? `${st.won}구간 승` : '';
   if (sport === 'soccer') return st.goals ? `${st.goals}골` : '';
   if (sport === 'basketball') return [st.pts ? `${st.pts}점` : '', st.reb ? `리바 ${st.reb}` : ''].filter(Boolean).join(' ');
   const ip = st.outs ? `${Math.floor(st.outs / 3)}${['', '⅓', '⅔'][st.outs % 3]}이닝` : '';

@@ -2,6 +2,8 @@
 import { getState, unreadCount } from './game/state.js';
 import { endWeek } from './game/turn.js';
 import { deliverPersonaEvent } from './game/persona.js';
+import { electionOpen } from './game/election.js';
+import { ensureExam, isExamWeek } from './game/exam.js';
 
 let toastTimer = null;
 
@@ -43,6 +45,11 @@ export function renderGamebar() {
 
   document.getElementById('who').textContent = `${s.profile.title} ${s.profile.name} 선생님`;
 
+  // 반장 선거 메뉴는 선거 기간에만, 시험 메뉴는 시험 주에 강조
+  const el = document.getElementById('nav-election');
+  if (el) el.hidden = !electionOpen(s);
+  const ex = document.querySelector('.sidenav a[data-section="exam"]');
+  if (ex) ex.classList.toggle('hot', isExamWeek(s, ensureExam(s)));
   const n = unreadCount();
   const count = document.getElementById('inbox-count');
   count.textContent = n;

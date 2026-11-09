@@ -10,6 +10,9 @@ import { aiWeek } from './ai.js';
 import { mod, personaWeekly, resolvePersonaChoice } from './persona.js';
 import { councilWeekly, voteOnAiAgenda, ruleOn } from './politics.js';
 import { intrigueWeekly, answerAllianceOffer, incomeIfNewSemester } from './intrigue.js';
+import { examWeekly } from './exam.js';
+import { resolveElection } from './election.js';
+import { prepWeekly } from './duel.js';
 import { ROOM_GROWTH } from '../content/council.js';
 import { placeById } from './school.js';
 
@@ -302,16 +305,24 @@ export function endWeek() {
   const strictMult = 0.6 + s.warden.strict * 0.04;
   const luckMult = { 빨: 1.3, 주: 1.15, 노: 1, 연: 0.85, 초: 0.7 };
   let quiet = 0;
+  const caughtThisWeek = {};
   for (const st of s.students) {
     if (st.calmUntil > s.turn) continue;
     const pers = ['장난', '대담'].includes(st.personality) ? 1.5 : ['성실', '얌전', '조심'].includes(st.personality) ? 0.5 : 1;
     const attempt = needLevel(st) * 0.003 * pers * (st.trait === '트러블 메이커' ? 2 : 1);
     if (rng.next() >= attempt) continue;
-    const need = topNeed(st);
-    const type = need === 'food' ? 'ramen' : need === 'home' ? 'phone' : need === 'recog' ? 'escape'
-      : rng.pick(['chromebook', 'escape', 'gamedev', 'vuln']);
-    const pCaught = 0.2 * (1 - st.stats['절제'] * 0.02) * (1 + st.stats['기행'] * 0.02) * moodMult * strictMult * luckMult[st.luck] * (1 + mod(s, 'catch') / 100);
-    if (rng.next() < pCaught) {
+    // 일탈 종류는 욕구 크기에 비례해 고른다. 귀가 욕구만 보고 고르면 1학기 내내 핸드폰만 나와서,
+    // 핸드폰은 가중치를 낮추고 숨기기 쉬워 발각 확률도 낮다 (주당 핸드폰 발각은 1건까지)
+    const n = st.needs;
+    const type = rng.weighted([
+      ['ramen', n.food + 1], ['phone', n.home * 0.5 + 1], ['escape', n.recog * 0.7 + n.play * 0.25 + 1],
+      ['chromebook', n.play * 0.35 + 1], ['gamedev', n.play * 0.2 + 1], ['vuln', n.play * 0.2 + 1],
+    ]);
+    const typeMult = type === 'phone' ? 0.5 : 1;
+    const pCaught = 0.2 * typeMult * (1 - st.stats['절제'] * 0.02) * (1 + st.stats['기행'] * 0.02) * moodMult * strictMult * luckMult[st.luck] * (1 + mod(s, 'catch') / 100);
+    const capHit = type === 'phone' && caughtThisWeek.phone >= 1;
+    if (!capHit && rng.next() < pCaught) {
+      caughtThisWeek[type] = (caughtThisWeek[type] ?? 0) + 1;
       s.caught[type] = (s.caught[type] ?? 0) + 1;
       addMessage({
         kind: 'event',
@@ -368,6 +379,9 @@ export function endWeek() {
 
   // 9. 교내 판도: 일상 영향력, 담당 수업, 반장 선거, 지배권 (룰북 8.2)
   if (s.duel?.m.done) s.duel = null;
+  examWeekly(s, rng); // 시험 주인데 직접 안 치렀으면 자동으로 (9.9)
+  prepWeekly(s, rng); // 행사 기획 준비도, 당일 지난 행사는 위임 대결로 (9.11)
+  resolveElection(s, rng); // 3월 2주 반장 선거 개표
   aiWeek(s, rng); // AI 계파 행동 (룰북 7.5)
   councilWeekly(s, rng); // 교무회의 표결, AI 안건, 흡수 교사 영향력, 부장 자리 AP
   intrigueWeekly(s, rng); // 포섭한 학생 영향력, 동맹 배신·만료, AI 동맹 제안
@@ -419,10 +433,12 @@ function creature(s, rng) {
 
 function eventText(ev) {
   return {
-    '학급 임원 선거': '반장 선거 주간입니다. 이번 주말에 선거가 열립니다. 담임반 지지도가 높을수록 우리 쪽 후보가 유리합니다.',
-    중간고사: '중간고사 주간입니다. 지난 몇 주 동안 성적 불안이 빠르게 올랐을 겁니다.',
+    '학급 임원 선거': '반장 선거 주간입니다. 왼쪽 메뉴의 "반장 선거"에서 우리 쪽 후보를 정하고 선거 운동을 하세요. 이번 주말에 개표합니다.',
+    중간고사: '중간고사 주간입니다. 왼쪽 메뉴의 "시험"에서 시험을 치르세요. 직접 치르지 않으면 주말에 자동으로 치릅니다.',
     체육대회: '전교 체육대회 주간입니다. 교내 판도에서 다른 반에 반 대항전을 신청해 보세요.',
-    기말고사: '기말고사 주간입니다.',
+    기말고사: '기말고사 주간입니다. 왼쪽 메뉴의 "시험"에서 시험을 치르세요.',
+    '2학기 중간고사': '2학기 중간고사 주간입니다. 왼쪽 메뉴의 "시험"에서 시험을 치르세요.',
+    '2학기 기말고사': '2학기 기말고사 주간입니다. 왼쪽 메뉴의 "시험"에서 시험을 치르세요.',
     '학기 평가': '1학기 마지막 주입니다. 교장의 학기 평가가 있습니다.',
   }[ev] ?? '';
 }

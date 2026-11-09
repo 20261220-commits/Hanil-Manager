@@ -28,10 +28,22 @@ const W = {
   IF: { 운동신경: 2, 집중력: 2, 협력: 1 },
   OF: { 운동신경: 3, 체력: 1 },
   BAT: { 운동신경: 3, 피지컬: 2, 집중력: 2, 평정심: 1 },
+  // 토론 (9.10)
+  OPEN: { 기획력: 2, 언어력: 2, 논리력: 2 },
+  CROSS: { 논리력: 3, 평정심: 2, 의사결정: 2 },
+  CLOSE: { 언어력: 2, 친화력: 2, 자존감: 2, 통솔: 1 },
+  // 행사 기획 (9.11)
+  HEAD: { 통솔: 3, 의사결정: 2, 기획력: 1 },
+  PLAN: { 기획력: 3, 창의성: 3 },
+  STAGE: { 창의성: 2, 적극성: 2, 평정심: 2 },
+  PR: { 친화력: 3, 언어력: 2 },
+  OPS: { 실행력: 3, 문제해결력: 2, 체력: 1 },
 };
 export const POS_LABEL = {
   GK: '골키퍼', DF: '수비', MF: '미드필더', FW: '공격',
   PG: '포인트가드', SG: '슈팅가드', SF: '스몰포워드', PF: '파워포워드', C: '센터',
+  OPEN: '입론자', CROSS: '질의자', CLOSE: '변론자',
+  HEAD: '총괄', PLAN: '기획', STAGE: '무대', PR: '홍보', OPS: '운영',
   P: '투수', RP: '후보 투수', CA: '포수', '1B': '1루수', '2B': '2루수', '3B': '3루수', SS: '유격수', LF: '좌익수', CF: '중견수', RF: '우익수',
 };
 const weightOf = (pos) => W[pos] ?? (['1B', '2B', '3B', 'SS'].includes(pos) ? W.IF : ['LF', 'CF', 'RF'].includes(pos) ? W.OF : W.MF);
@@ -40,9 +52,10 @@ const weightOf = (pos) => W[pos] ?? (['1B', '2B', '3B', 'SS'].includes(pos) ? W.
 const UNLOCKED = new Set();
 export const isUnlocked = (opt) => !opt.lock || UNLOCKED.has(opt.lock);
 
+// group: sport 반 대항전(9.8) · debate 토론(9.10) · event 행사 기획(9.11)
 export const SPORTS = {
   soccer: {
-    name: '축구', venue: '운동장', outdoor: true, segs: ['전반', '후반', '추가시간'], subs: 3,
+    group: 'sport', name: '축구', venue: '운동장', outdoor: true, segs: ['전반', '후반', '추가시간'], subs: 3,
     margin: [3, 2], unit: '골',
     options: {
       formation: { label: '포메이션', pre: true, list: [
@@ -70,7 +83,7 @@ export const SPORTS = {
     },
   },
   basketball: {
-    name: '농구', venue: '무성관', outdoor: false, segs: ['1쿼터', '2쿼터', '3쿼터', '4쿼터'], subs: 10,
+    group: 'sport', name: '농구', venue: '무성관', outdoor: false, segs: ['1쿼터', '2쿼터', '3쿼터', '4쿼터'], subs: 10,
     margin: [15, 6], unit: '점',
     options: {
       lineup: { label: '라인업', pre: true, list: [
@@ -93,7 +106,7 @@ export const SPORTS = {
     positions: (t) => ({ 균형: ['PG', 'SG', 'SF', 'PF', 'C'], 스몰: ['PG', 'SG', 'SG', 'SF', 'PF'], 빅: ['PG', 'SF', 'PF', 'C', 'C'] }[t.lineup]),
   },
   baseball: {
-    name: '야구', venue: '운동장', outdoor: true, segs: ['1~3회', '4~6회', '7~9회'], subs: 2,
+    group: 'sport', name: '야구', venue: '운동장', outdoor: true, segs: ['1~3회', '4~6회', '7~9회'], subs: 2,
     margin: [5, 2], unit: '점',
     options: {
       defense: { label: '수비 배치', list: [
@@ -110,7 +123,39 @@ export const SPORTS = {
     defaults: { defense: '정상 수비', offense: '균형' },
     positions: () => ['P', 'CA', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'RP'],
   },
+  debate: {
+    group: 'debate', name: '토론', venue: '시청각동', outdoor: false, segs: ['입론', '교차질의', '최종 변론'], subs: 0,
+    margin: [3, 1], unit: '구간',
+    options: {
+      style: { label: '토론 스타일', list: [
+        { key: '논리형', desc: '공격형에 강하고 감성형에 약함' },
+        { key: '공격형', desc: '감성형에 강하고 논리형에 약함' },
+        { key: '감성형', desc: '논리형에 강하고 공격형에 약함' },
+      ] },
+    },
+    defaults: { style: '논리형' },
+    positions: () => ['OPEN', 'CROSS', 'CLOSE'],
+  },
+  event: {
+    group: 'event', name: '행사 기획', venue: '광장', outdoor: false, segs: ['오프닝', '메인 무대', '피날레'], subs: 1,
+    margin: [3, 1], unit: '구간', prepWeeks: 3,
+    options: {
+      concept: { label: '콘셉트', pre: true, list: [
+        { key: '감동', desc: '학부모·교사 관객에게 맞음' },
+        { key: '웃음', desc: '저학년 관객에게 맞음' },
+        { key: '화려함', desc: '고학년 관객에게 맞음' },
+      ] },
+    },
+    defaults: { concept: '감동' },
+    positions: () => ['HEAD', 'PLAN', 'STAGE', 'PR', 'OPS'],
+  },
 };
+
+// 토론 심사위원과 행사 관객 (9.10, 9.11)
+export const JUDGES = { 교사단: '논리형', 청중: '감성형', 동아리: '공격형' };
+export const JUDGE_LABEL = { 교사단: '엄격한 교사단 (논리형 ×1.10)', 청중: '학생 청중 투표 (감성형 ×1.10)', 동아리: '토론 동아리 출신 (공격형 ×1.10)' };
+export const AUDIENCES = { '학부모·교사': '감동', 저학년: '웃음', 고학년: '화려함' };
+const STYLE_BEATS = { 논리형: '공격형', 공격형: '감성형', 감성형: '논리형' };
 
 // 결과 등급 (9.6): 점수 차로 압승·승리·신승(석패)
 export function resultGrade(sport, diff) {
@@ -147,6 +192,7 @@ function power(m, side, id, pos) {
   const p = side.players[id];
   let v = fit(p, pos) * condMult(p.condition) * MORALE_MULT[Math.max(0, MORALE.indexOf(p.morale))];
   v *= side.segMult?.[id] ?? 1;
+  if (pos === 'PR') v *= 1 + 0.03 * (p.fameStars ?? 0); // 홍보: 명성 별당 3%
   // 승부욕: 지고 있는 팀은 마지막 구간에 개인 전력 + (승부욕 - 10) × 0.8%
   if (side.trailingLast) v *= 1 + (stat(p, '승부욕') - 10) * 0.008;
   return v;
@@ -156,6 +202,17 @@ function teamMult(m, side, opp) {
   const ids = side.lineup.filter((x) => x.pos !== 'RP').map((x) => x.id);
   const coop = 0.85 + (ids.reduce((a, id) => a + stat(side.players[id], '협력'), 0) / ids.length / 20) * 0.25;
   let mult = coop * (side.home ? 1.05 : 1) * (1 + (side.lead - 10) * 0.005 + (side.bonus ?? 0)) * side.form;
+  if (m.sport === 'debate') {
+    // 상성: 논리형 > 공격형 > 감성형 > 논리형 (유리 1.15 / 불리 0.90), 심사위원 성향과 맞으면 ×1.10
+    if (STYLE_BEATS[side.tactics.style] === opp.tactics.style) mult *= 1.15;
+    else if (STYLE_BEATS[opp.tactics.style] === side.tactics.style) mult *= 0.9;
+    if (m.judge && JUDGES[m.judge] === side.tactics.style) mult *= 1.1;
+  }
+  if (m.sport === 'event') {
+    // 콘셉트가 관객과 맞으면 ×1.15, 안 맞으면 ×0.90 · 준비도 배율 0.7 + 준비도 × 0.004
+    if (m.audience) mult *= AUDIENCES[m.audience] === side.tactics.concept ? 1.15 : 0.9;
+    mult *= 0.7 + (side.readiness ?? 60) * 0.004;
+  }
   if (m.sport === 'soccer') {
     const beats = { 공격적: '균형', 균형: '수비적', 수비적: '공격적' };
     if (beats[side.tactics.tendency] === opp.tactics.tendency) mult *= 1.05;
@@ -202,25 +259,29 @@ export function battingOrder(side) {
 // ---------- 경기 만들기 ----------
 
 // side 입력: { key, name, faction, lead, bonus, home, players: [학생], lineup?, tactics? }
-export function createMatch(sport, a, b, rng) {
+export function createMatch(sport, a, b, rng, extra = {}) {
   const mk = (x) => {
     const tactics = { ...SPORTS[sport].defaults, ...(x.tactics ?? {}) };
     const players = {};
     for (const p of x.players) {
       players[p.id] = { id: p.id, name: p.name, stats: { ...p.stats }, morale: p.morale, condition: p.condition, luck: p.luck,
-        personality: p.personality, trait: p.trait, mods: {} };
+        personality: p.personality, trait: p.trait, mods: {}, fameStars: [100, 300, 700, 1500, 3000].filter((x) => (p.fameExp ?? 0) >= x).length };
     }
     const list = Object.values(players);
     const lineup = x.lineup ?? autoLineup(list, SPORTS[sport].positions(tactics));
     return {
       key: x.key, name: x.name, faction: x.faction, lead: x.lead, bonus: x.bonus ?? 0, home: !!x.home,
       players, lineup, tactics, subsLeft: SPORTS[sport].subs,
-      form: clamp(1 + rng.gauss() * 0.15, 0.6, 1.4), // 경기 당일 컨디션 (9.3)
+      // 경기 당일 컨디션 (9.3): 스포츠 3종목만
+      form: SPORTS[sport].group === 'sport' ? clamp(1 + rng.gauss() * 0.15, 0.6, 1.4) : 1,
+      readiness: x.readiness,
       stats: {}, segMult: {}, used: lineup.map((l) => l.id),
       bat: 0, pitcher: { id: lineup.find((l) => l.pos === 'P')?.id, faced: 0, fatigue: 1, relieved: false },
     };
   };
   const m = { sport, seg: 0, score: [0, 0], segScore: [], log: [], done: false, sides: [mk(a), mk(b)], innings: 0 };
+  if (sport === 'debate') m.judge = extra.judge ?? rng.pick(Object.keys(JUDGES));
+  if (sport === 'event') m.audience = extra.audience ?? rng.pick(Object.keys(AUDIENCES));
   if (sport === 'baseball') for (const s of m.sides) s.order = battingOrder(s);
   return m;
 }
@@ -507,10 +568,60 @@ function baseballSegment(m, rng) {
   drainStamina(m, 0.7);
 }
 
+// 구간 승률: 전력비 1.1 → 59%, 1.2 → 67%, 1.5 → 84% (9.3)
+const segWinChance = (r) => r ** 3.9 / (r ** 3.9 + 1);
+
+// 토론: 구간 담당자 70% + 나머지 두 명의 지원 30% (9.10)
+function debateSegment(m, rng) {
+  const role = SPORTS.debate.positions()[m.seg];
+  const segName = SPORTS.debate.segs[m.seg];
+  const pw = m.sides.map((side, i) => {
+    const main = side.lineup.find((l) => l.pos === role);
+    const others = side.lineup.filter((l) => l !== main);
+    const v = 0.7 * power(m, side, main.id, role) + 0.3 * (others.reduce((a, l) => a + power(m, side, l.id, role), 0) / others.length);
+    return { v: v * teamMult(m, side, m.sides[1 - i]), main };
+  });
+  const w = rng.next() < segWinChance(pw[0].v / pw[1].v) ? 0 : 1;
+  m.score[w]++;
+  addStat(m.sides[w], pw[w].main.id, 'won');
+  m.segScore.push(w === 0 ? [1, 0] : [0, 1]);
+  m.log.push({ seg: m.seg, side: w, tone: 'goal', text: `${segName}: ${m.sides[w].name} 우세 (${m.sides[w].players[pw[w].main.id].name}) · ${m.score[0]}:${m.score[1]}` });
+  drainStamina(m, 0.3);
+}
+
+// 행사 기획: 구간마다 중요한 역할이 다르다. 사고가 나면 운영 담당이 수습한다 (9.11)
+const EVENT_FOCUS = [
+  { HEAD: 0.35, PR: 0.35, PLAN: 0.1, STAGE: 0.1, OPS: 0.1 },
+  { PLAN: 0.35, STAGE: 0.35, HEAD: 0.1, PR: 0.1, OPS: 0.1 },
+  { STAGE: 0.3, OPS: 0.3, HEAD: 0.2, PR: 0.1, PLAN: 0.1 },
+];
+function eventSegment(m, rng) {
+  const segName = SPORTS.event.segs[m.seg];
+  const focus = EVENT_FOCUS[m.seg];
+  const pw = m.sides.map((side, i) => {
+    let v = 0;
+    for (const l of side.lineup) v += (focus[l.pos] ?? 0.1) * power(m, side, l.id, l.pos);
+    v *= teamMult(m, side, m.sides[1 - i]);
+    if (rng.next() < 0.12) {
+      const ops = side.lineup.find((l) => l.pos === 'OPS');
+      const fixed = ops && rng.next() < stat(side.players[ops.id], '문제해결력') * 0.04;
+      v *= fixed ? 0.875 : 0.75;
+      m.log.push({ seg: m.seg, side: i, tone: 'bad', text: `${segName}: ${side.name} 쪽에 사고가 났습니다${fixed ? ` · ${side.players[ops.id].name}이(가) 재빨리 수습했습니다` : ''}` });
+    }
+    return v;
+  });
+  const w = rng.next() < segWinChance(pw[0] / pw[1]) ? 0 : 1;
+  m.score[w]++;
+  for (const l of m.sides[w].lineup) if ((focus[l.pos] ?? 0) >= 0.3) addStat(m.sides[w], l.id, 'won');
+  m.segScore.push(w === 0 ? [1, 0] : [0, 1]);
+  m.log.push({ seg: m.seg, side: w, tone: 'goal', text: `${segName}: ${m.sides[w].name} 무대가 더 반응이 좋았습니다 · ${m.score[0]}:${m.score[1]}` });
+  drainStamina(m, 0.4);
+}
+
 export function playSegment(m, rng) {
   if (m.done) return;
   rollSegmentEvents(m, rng);
-  ({ soccer: soccerSegment, basketball: basketballSegment, baseball: baseballSegment })[m.sport](m, rng);
+  ({ soccer: soccerSegment, basketball: basketballSegment, baseball: baseballSegment, debate: debateSegment, event: eventSegment })[m.sport](m, rng);
   m.seg++;
   if (m.seg >= SPORTS[m.sport].segs.length || m.called) finishMatch(m, rng);
 }
@@ -539,8 +650,9 @@ export function aiTimeout(m, si, rng, smart = 0.6) {
     if (m.sport === 'soccer') side.tactics.tendency = '공격적';
     if (m.sport === 'basketball') side.tactics.offense = rng.next() < 0.5 ? '속공' : '3점 위주';
     if (m.sport === 'baseball') side.tactics.offense = '강공';
+    if (m.sport === 'debate') side.tactics.style = Object.keys(STYLE_BEATS).find((k) => STYLE_BEATS[k] === m.sides[1 - si].tactics.style);
   }
-  if (m.sport === 'baseball') return;
+  if (m.sport === 'baseball' || m.sport === 'debate') return;
   const tired = side.lineup.filter((l) => side.players[l.id].condition < 65).sort((a, b) => side.players[a.id].condition - side.players[b.id].condition);
   for (const l of tired) {
     if (side.subsLeft <= 0) break;
@@ -571,6 +683,8 @@ function finishMatch(m, rng) {
         r += (st.goals ?? 0) * 1.0 + (st.shots ?? 0) * 0.05;
         if (l?.pos === 'GK') r += (st.conceded ?? 0) === 0 ? 0.8 : -(st.conceded) * 0.35;
         if (l?.pos === 'DF') r += (st.conceded ?? 0) === 0 ? 0.4 : -(st.conceded) * 0.15;
+      } else if (m.sport === 'debate' || m.sport === 'event') {
+        r += (st.won ?? 0) * 0.8;
       } else if (m.sport === 'basketball') {
         r += (st.pts ?? 0) * 0.09 + (st.reb ?? 0) * 0.15 - 0.6;
       } else {

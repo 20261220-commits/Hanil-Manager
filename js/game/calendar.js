@@ -8,6 +8,8 @@ const EVENTS = {
   10: '체육대회',
   17: '기말고사',
   20: '학기 평가',
+  31: '2학기 중간고사',
+  39: '2학기 기말고사',
 };
 
 export function weekLabel(turn) {
@@ -20,7 +22,7 @@ export function weekLabel(turn) {
 export const eventOf = (turn) => EVENTS[turn] ?? null;
 
 // 시험 직전 3주는 성적 불안이 두 배로 오른다.
-export const nearExam = (turn) => [6, 7, 8, 15, 16, 17].includes(turn);
+export const nearExam = (turn) => [6, 7, 8, 15, 16, 17, 29, 30, 31, 37, 38, 39].includes(turn);
 
 // 월 1회 금요일 귀성 (룰북 13.2): 매달 4주째 주말
 export const isHomecoming = (turn) => turn % 4 === 0;

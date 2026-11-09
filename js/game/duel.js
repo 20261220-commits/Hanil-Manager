@@ -4,13 +4,34 @@ import { getState, save, nextRng, addMessage, count, checkTitles } from './state
 import { makeRng, clamp } from './rng.js';
 import { isVacation } from './calendar.js';
 import { classById, rosterOf, transfer, placeById, placeInfo, championClass } from './school.js';
-import { SPORTS, createMatch, playSegment, preTalk, aiTimeout, substitute, isUnlocked, fit, autoLineup, bestTactics, estimateWin } from './match.js';
+import { SPORTS, JUDGES, AUDIENCES, createMatch, playSegment, preTalk, aiTimeout, substitute, isUnlocked, fit, autoLineup, bestTactics, estimateWin } from './match.js';
 import { FACTIONS, HOMEROOM_ID, classLabel } from '../content/factions.js';
 import { makeClassRoster } from './students.js';
 import { teacherStat, shiftMorale } from './turn.js';
 import { mod } from './persona.js';
 
 export const DUEL_AP = 2;
+export const SCOUT_AP = 1;
+export const SPORT_KEYS = Object.keys(SPORTS).filter((k) => SPORTS[k].group === 'sport');
+
+// 이번 주 그 상대의 토론 심사위원과 행사 관객 (상대 분석으로 미리 볼 수 있다)
+const pickBy = (list, n) => list[Math.abs(Math.floor(n)) % list.length];
+export const judgeOf = (s, t) => pickBy(Object.keys(JUDGES), t.seed + s.turn * 7);
+export const audienceOf = (s, t) => pickBy(Object.keys(AUDIENCES), t.seed + s.turn * 11 + 3);
+// 상대가 이번 주 쓸 전술 (상대 분석으로 미리 볼 수 있다)
+export const oppTacticsOf = (s, t, sport) => aiTactics(sport, makeRng(t.seed + s.turn * 13 + sport.length));
+export const scouted = (s, id) => s.school.scout?.[id] === s.turn;
+
+export function scout(targetId) {
+  const s = getState();
+  const t = target(s, targetId);
+  if (!t) return fail('없는 대상입니다.');
+  if (scouted(s, targetId)) return fail('이번 주에 이미 분석했습니다.');
+  if (s.ap < SCOUT_AP) return fail(`AP가 부족합니다 (필요 ${SCOUT_AP}).`);
+  s.ap -= SCOUT_AP;
+  (s.school.scout ??= {})[targetId] = s.turn;
+  return done(`${t.label} 상대 분석을 마쳤습니다. 이번 주 토론 심사위원과 상대 전술이 보입니다.`);
+}
 
 // 대결 대상 정보
 export function target(s, id) {
@@ -35,6 +56,7 @@ export function challengeBlock(s, t) {
   if (t.kind === 'class' && t.id === HOMEROOM_ID) return '우리 담임반입니다.';
   if (t.owner === 'player') return t.kind === 'class' ? '이미 우리가 점령한 반입니다.' : '이미 우리 땅입니다.';
   if (t.kind === 'place' && t.placeKind !== 'outdoor') return '대결로는 얻을 수 없는 곳입니다.';
+  if (s.school.preps?.[t.id]) return null; // 행사 준비 중: 준비 화면은 열 수 있다
   if (s.duel && !s.duel.m.done) return '진행 중인 대결을 먼저 끝내 주세요.';
   if (s.turn < 3) return '대결 신청은 3월 3주부터 할 수 있습니다.';
   if (isVacation(s.turn)) return '방학에는 대결을 할 수 없습니다.';
@@ -48,6 +70,7 @@ export const actualSport = (s, sport) => (s.school.weather === '비' && SPORTS[s
 
 // 홈 보정: 그 종목 경기장(운동장·무성관)의 주인이 도전자면 도전자가, 아니면 도전받은 쪽이 홈
 export function homeSide(s, sport, attacker) {
+  if (SPORTS[sport].group !== 'sport') return 'defender';
   const venue = s.school.places.find((p) => placeInfo(p.id).venue?.includes(sport));
   return venue && venue.owner === attacker ? 'attacker' : 'defender';
 }
@@ -91,7 +114,7 @@ export function refusedSport(s, t, attackerRoster = s.students) {
   if (!FACTIONS[t.owner]?.refuses) return null;
   const theirs = t.roster();
   let worst = null;
-  for (const sport of Object.keys(SPORTS)) {
+  for (const sport of SPORT_KEYS) {
     const r = teamStrength(theirs, sport) / teamStrength(attackerRoster, sport);
     if (!worst || r < worst.r) worst = { sport, r };
   }
@@ -103,7 +126,9 @@ export function preview(s, t, sport) {
   const real = actualSport(s, sport);
   const me = playerSide(s), op = oppSide(s, t, real);
   if (homeSide(s, real, 'player') === 'attacker') { me.home = true; op.home = false; }
-  const est = estimateWin(real, me, op, (k) => makeRng(t.seed + k * 101 + s.turn * 7), 60);
+  const extra = { judge: judgeOf(s, t), audience: audienceOf(s, t) };
+  if (real === 'event') { me.readiness = s.school.preps?.[t.id]?.readiness ?? 60; op.readiness = oppReadiness(t); }
+  const est = estimateWinX(real, me, op, (k) => makeRng(t.seed + k * 101 + s.turn * 7), 60, extra);
   const eye = teacherStat('안목');
   const fuzz = (20 - eye) * 0.012;
   const bias = makeRng(t.seed + s.turn).gauss() * fuzz * 0.6;
@@ -111,33 +136,129 @@ export function preview(s, t, sport) {
   return { sport: real, low: clamp(mid - fuzz, 0, 1), high: clamp(mid + fuzz, 0, 1), draw: est.draw, home: me.home };
 }
 
-export function autoSetup(s, sport, tactics) {
+// t를 주고 상대 분석을 했으면, 토론은 상대 스타일과 심사위원을 보고 가장 유리한 스타일을 고른다
+export function autoSetup(s, sport, tactics, t = null) {
   const base = { ...playerSide(s), tactics: { ...SPORTS[sport].defaults, ...tactics } };
   const lineup = autoLineup(s.students, SPORTS[sport].positions(base.tactics));
-  const combo = bestTactics(sport, { ...base, lineup }, (t) => makeRng(s.seed + t * 13 + s.turn), 24);
+  const combo = bestTactics(sport, { ...base, lineup }, (k) => makeRng(s.seed + k * 13 + s.turn), 24);
+  if (sport === 'debate' && t && scouted(s, t.id)) {
+    const opp = oppTacticsOf(s, t, 'debate').style, judge = JUDGES[judgeOf(s, t)];
+    const beats = { 논리형: '공격형', 공격형: '감성형', 감성형: '논리형' };
+    const score = (st) => (beats[st] === opp ? 1.15 : beats[opp] === st ? 0.9 : 1) * (judge === st ? 1.1 : 1);
+    combo.style = Object.keys(beats).sort((a, b) => score(b) - score(a))[0];
+  }
   return { lineup, tactics: { ...base.tactics, ...combo } };
 }
 
 const fail = (msg) => ({ ok: false, msg });
 const done = (msg) => { checkTitles(); save(); return { ok: true, msg }; };
 
+// estimateWin에 심사위원·관객을 고정해서 넘긴다
+function estimateWinX(sport, a, b, rngFactory, n, extra) {
+  let w = 0, d = 0;
+  for (let k = 0; k < n; k++) {
+    const rng = rngFactory(k);
+    const m = createMatch(sport, a, b, rng, extra);
+    while (!m.done) playSegment(m, rng);
+    if (m.winner === 0) w++; else if (m.winner === null) d++;
+  }
+  return { win: w / n, draw: d / n };
+}
+
+// 상대 반의 행사 준비도 (40~90)
+export const oppReadiness = (t) => 40 + (Math.abs(t.seed) % 51);
+
+// ---------- 행사 기획: 3주 준비 (9.11) ----------
+
+export const EVENT_INVEST_AP = 1, EVENT_INVEST_MONEY = 5, EVENT_MONEY_CAP = 15;
+
+// 한 주에 쌓이는 준비도: [(기획 담당 기획력 + 운영 담당 실행력) × 1.5 + 총괄 통솔 × 0.5] × 0.5
+export function prepGain(s, prep) {
+  const st = (pos) => s.students.find((x) => x.id === prep.lineup.find((l) => l.pos === pos)?.id);
+  const plan = st('PLAN'), ops = st('OPS'), head = st('HEAD');
+  return Math.round(((plan?.stats['기획력'] ?? 8) + (ops?.stats['실행력'] ?? 8)) * 1.5 * 0.5 + (head?.stats['통솔'] ?? 8) * 0.5 * 0.5);
+}
+
+export function scheduleEvent(targetId, draft) {
+  const s = getState();
+  const t = target(s, targetId);
+  if (!t) return fail('없는 대상입니다.');
+  const block = challengeBlock(s, t); if (block) return fail(block);
+  if (s.school.preps?.[targetId]) return fail('이미 행사를 준비하고 있습니다.');
+  s.ap -= DUEL_AP;
+  s.school.challenged[targetId] = true;
+  (s.school.preps ??= {})[targetId] = {
+    due: s.turn + SPORTS.event.prepWeeks, readiness: 0, money: {}, lineup: draft.lineup.map((l) => ({ ...l })), tactics: { ...draft.tactics },
+    audience: audienceOf(s, t), oppReady: oppReadiness(t), talk: draft.talk ?? null,
+  };
+  return done(`${t.label}과(와)의 행사 기획 대결을 ${SPORTS.event.prepWeeks}주 뒤로 잡았습니다. 그동안 준비도를 쌓아 주세요.`);
+}
+
+export function investPrep(targetId, kind) {
+  const s = getState();
+  const prep = s.school.preps?.[targetId];
+  if (!prep) return fail('준비 중인 행사가 없습니다.');
+  if (s.turn >= prep.due) return fail('행사 당일입니다. 이제 무대에 올릴 차례입니다.');
+  if (prep.readiness >= 100) return fail('준비도가 이미 가득 찼습니다.');
+  if (kind === 'ap') {
+    if (s.ap < EVENT_INVEST_AP) return fail(`AP가 부족합니다 (필요 ${EVENT_INVEST_AP}).`);
+    s.ap -= EVENT_INVEST_AP;
+  } else {
+    const spent = prep.money[s.turn] ?? 0;
+    if (spent + EVENT_INVEST_MONEY > EVENT_MONEY_CAP) return fail(`준비 투자는 한 주에 ${EVENT_MONEY_CAP}만원까지입니다.`);
+    if (s.budget < EVENT_INVEST_MONEY) return fail('예산이 부족합니다.');
+    s.budget -= EVENT_INVEST_MONEY;
+    prep.money[s.turn] = spent + EVENT_INVEST_MONEY;
+  }
+  prep.readiness = Math.min(100, prep.readiness + 10);
+  return done(`준비도 +10 (지금 ${prep.readiness}).`);
+}
+
+// 주말 정산: 준비도가 쌓이고, 당일이 지났는데 안 치른 행사는 위임 대결로 치른다
+export function prepWeekly(s, rng) {
+  for (const [id, prep] of Object.entries(s.school.preps ?? {})) {
+    if (s.turn < prep.due) { prep.readiness = Math.min(100, prep.readiness + prepGain(s, prep)); continue; }
+    const t = target(s, id);
+    delete s.school.preps[id];
+    if (!t || t.owner === 'player') continue;
+    const m = createMatch('event', { ...playerSide(s, prep), readiness: prep.readiness }, { ...oppSide(s, t, 'event', rng), readiness: prep.oppReady }, rng, { audience: prep.audience });
+    while (!m.done) { if (m.seg > 0) { aiTimeout(m, 0, rng, clamp(teacherStat('지도력') * 0.04, 0, 1)); aiTimeout(m, 1, rng); } playSegment(m, rng); }
+    applyResult(s, { classId: id, sport: 'event', asked: 'event', m, result: null, auto: true }, rng);
+  }
+}
+
 export function beginDuel(targetId, sport, draft) {
   const s = getState();
   const t = target(s, targetId);
   if (!t) return fail('없는 대상입니다.');
+  const prep = s.school.preps?.[targetId];
+  if (sport === 'event' || prep) return beginEvent(s, t, prep);
   const block = challengeBlock(s, t); if (block) return fail(block);
   if (sport === refusedSport(s, t)) return fail('상대가 거부한 종목입니다.');
   const real = actualSport(s, sport);
   const rng = nextRng();
   s.ap -= DUEL_AP;
   s.school.challenged[targetId] = true;
-  const me = playerSide(s, draft), op = oppSide(s, t, real, rng);
+  const me = playerSide(s, draft), op = { ...oppSide(s, t, real, rng), tactics: oppTacticsOf(s, t, real) };
   if (homeSide(s, real, 'player') === 'attacker') { me.home = true; op.home = false; }
-  const m = createMatch(real, me, op, rng);
+  const m = createMatch(real, me, op, rng, { judge: judgeOf(s, t) });
   if (draft.talk !== null && draft.talk !== undefined) preTalk(m, 0, draft.talk, teacherStat('동기부여'), rng);
   if (rng.next() < 0.7) preTalk(m, 1, rng.int(0, 2), 10, rng);
   s.duel = { classId: targetId, sport: real, asked: sport, m, result: null };
   return done(`${t.label}에 ${SPORTS[real].name} 대결을 신청했습니다.${real !== sport ? ' 비가 와서 농구로 바뀌었습니다.' : ''}`);
+}
+
+// 행사 당일: 준비해 둔 명단과 준비도로 무대에 올린다
+function beginEvent(s, t, prep) {
+  if (!prep) return fail('먼저 행사 날짜를 잡아 주세요.');
+  if (s.turn < prep.due) return fail(`행사는 ${prep.due - s.turn}주 뒤입니다.`);
+  if (s.duel && !s.duel.m.done) return fail('진행 중인 대결을 먼저 끝내 주세요.');
+  const rng = nextRng();
+  delete s.school.preps[t.id];
+  const m = createMatch('event', { ...playerSide(s, prep), readiness: prep.readiness }, { ...oppSide(s, t, 'event', rng), readiness: prep.oppReady }, rng, { audience: prep.audience });
+  if (prep.talk !== null && prep.talk !== undefined) preTalk(m, 0, prep.talk, teacherStat('동기부여'), rng);
+  s.duel = { classId: t.id, sport: 'event', asked: 'event', m, result: null };
+  return done(`${t.label}과(와)의 행사 기획 대결이 시작됩니다. 관객: ${prep.audience}.`);
 }
 
 export function nextSegment() {

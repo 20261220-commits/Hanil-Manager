@@ -187,16 +187,19 @@ export function weeklySchool(s, rng) {
       if (cls.id === HOMEROOM_ID) continue;
       cls.captain = leader(cls);
     }
+    // 담임반 반장 선거는 election.js에서 개표한다 (예전 세이브처럼 선거 상태가 없을 때만 여기서)
     const home = classById(s, HOMEROOM_ID);
     const cand = s.students.find((st) => st.tags.includes('leader')) ?? s.students[0];
-    const p = clamp(0.35 + (home.support.player / 100) * 0.6 + (cand.stats['통솔'] - 10) * 0.02, 0.1, 0.9);
-    if (rng.next() < p) {
-      home.captain = 'player';
-      transfer(home, 'others', 'player', 10);
-      msgs.push({ kind: 'info', title: `반장 선거: ${cand.name} 당선`, body: `우리 쪽 후보 ${cand.name}이(가) 1학년 4반 반장이 됐습니다. 담임반 지지도 +10%p, 앞으로 매주 +1%p.` });
-    } else {
-      home.captain = 'none';
-      msgs.push({ kind: 'info', title: '반장 선거: 낙선', body: `우리 쪽 후보 ${cand.name}이(가) 반장 선거에서 졌습니다. 무소속 학생이 반장이 됐습니다.` });
+    if (!s.election) {
+      const p = clamp(0.35 + (home.support.player / 100) * 0.6 + (cand.stats['통솔'] - 10) * 0.02, 0.1, 0.9);
+      if (rng.next() < p) {
+        home.captain = 'player';
+        transfer(home, 'others', 'player', 10);
+        msgs.push({ kind: 'info', title: `반장 선거: ${cand.name} 당선`, body: `우리 쪽 후보 ${cand.name}이(가) 1학년 4반 반장이 됐습니다. 담임반 지지도 +10%p, 앞으로 매주 +1%p.` });
+      } else {
+        home.captain = 'none';
+        msgs.push({ kind: 'info', title: '반장 선거: 낙선', body: `우리 쪽 후보 ${cand.name}이(가) 반장 선거에서 졌습니다. 무소속 학생이 반장이 됐습니다.` });
+      }
     }
   }
 
