@@ -15,6 +15,7 @@ function attackerClass(s, f, t) {
 import { subjectBonus, target, refusedSport, teamStrength, actualSport, homeSide, aiTactics, settle, applyToStudents, autoSetup } from './duel.js';
 import { SPORTS, createMatch, playSegment, aiTimeout } from './match.js';
 import { teacherStat } from './turn.js';
+import { isAlly } from './intrigue.js';
 import { FACTIONS, AI_FACTIONS, HOMEROOM_ID, classLabel } from '../content/factions.js';
 
 // 계파별 성향 가중치 (7.5 표)
@@ -73,6 +74,7 @@ export function aiWeek(s, rng) {
     const w = WEIGHTS[f];
     // 교무실에서 사이가 나빠진 계파(관계 -40 이하)는 우리를 더 노린다 (적대 계파 대상 행동 ×1.3)
     const hostile = (sc.rel?.[f] ?? 0) <= -40 ? 1.3 : 1;
+    const allied = isAlly(s, f); // 동맹 중에는 우리 땅을 건드리지 않는다
     let ap = AP;
     let duels = 0;
     for (let step = 0; step < 6 && ap > 0; step++) {
@@ -87,7 +89,7 @@ export function aiWeek(s, rng) {
       if (duelsOpen && duels < 1 && ap >= COST.duel && tmul > 0) {
         for (const t of allTargets) {
           if (targeted.has(t.id)) continue;
-          if (t.owner === 'player' && onPlayer >= capOnPlayer) continue;
+          if (t.owner === 'player' && (onPlayer >= capOnPlayer || allied)) continue;
           const champ = attackerClass(s, f, t);
           if (!champ) continue;
           // 담임반은 빼앗을 수 없는 반이라 노릴 가치가 낮다
@@ -100,7 +102,7 @@ export function aiWeek(s, rng) {
       // 포섭: 우리 몫이 어느 정도 있는 반에서 학생을 빼온다
       if (ap >= COST.recruit) {
         for (const c of sc.classes) {
-          if (c.owner === f || c.support[f] < 8 || c.support[f] > 55) continue;
+          if (c.owner === f || c.support[f] < 8 || c.support[f] > 55 || (allied && c.owner === 'player')) continue;
           const score = 10 * w.recruit * (c.support[f] / 30) * (c.owner === 'none' ? 1.2 : 1) * (c.owner === 'player' ? th.mult * hostile : 1);
           cands.push({ type: 'recruit', c, score });
         }
@@ -108,7 +110,7 @@ export function aiWeek(s, rng) {
       // 공작(소문): 다른 계파가 가진 반의 지지도를 깎는다
       if (ap >= COST.scheme) {
         for (const c of sc.classes) {
-          if (c.owner === f || c.owner === 'none' || c.id === HOMEROOM_ID) continue;
+          if (c.owner === f || c.owner === 'none' || c.id === HOMEROOM_ID || (allied && c.owner === 'player')) continue;
           const score = 5 * w.scheme * (c.support[c.owner] < 60 ? 1.3 : 1) * (c.owner === 'player' ? th.mult * hostile : 1);
           cands.push({ type: 'scheme', c, score });
         }

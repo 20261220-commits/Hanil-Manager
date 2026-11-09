@@ -9,6 +9,7 @@ import { weeklySchool, semesterGoal } from './school.js';
 import { aiWeek } from './ai.js';
 import { mod, personaWeekly, resolvePersonaChoice } from './persona.js';
 import { councilWeekly, voteOnAiAgenda, ruleOn } from './politics.js';
+import { intrigueWeekly, answerAllianceOffer, incomeIfNewSemester } from './intrigue.js';
 import { ROOM_GROWTH } from '../content/council.js';
 import { placeById } from './school.js';
 
@@ -182,6 +183,11 @@ export function resolveDecision(msgId, choice) {
   const s = getState();
   const m = s.inbox.find((x) => x.id === msgId);
   if (!m || m.resolved) return fail('이미 처리한 일입니다.');
+  if (m.ally) {
+    const r = answerAllianceOffer(s, m, choice);
+    m.resolved = choice; m.read = true; m.result = r;
+    return done(r);
+  }
   if (m.council) {
     const r = voteOnAiAgenda(s, m, choice);
     m.resolved = choice; m.read = true; m.result = `${{ yes: '찬성', no: '반대', abstain: '기권' }[choice]} · ${r}`;
@@ -364,10 +370,12 @@ export function endWeek() {
   if (s.duel?.m.done) s.duel = null;
   aiWeek(s, rng); // AI 계파 행동 (룰북 7.5)
   councilWeekly(s, rng); // 교무회의 표결, AI 안건, 흡수 교사 영향력, 부장 자리 AP
+  intrigueWeekly(s, rng); // 포섭한 학생 영향력, 동맹 배신·만료, AI 동맹 제안
   for (const msg of weeklySchool(s, rng)) addMessage(msg);
   if (s.turn === 20) {
     const g = semesterGoal(s);
     s.trust = clamp(s.trust + (g.ok ? 10 : -10), 0, 100);
+    s.school.goalOk = g.ok; // 다음 학기 예산에 목표 달성 포상 +20
     addMessage({ kind: g.ok ? 'info' : 'warn', title: `1학기 평가: ${g.ok ? '목표 달성' : '목표 미달'}`,
       body: `담임반 지지도 ${Math.round(g.home)}% (목표 70%), 추가로 점령한 반 ${g.owned}개 (목표 1개). 교장 신임 ${g.ok ? '+10' : '-10'}.` });
   }
@@ -378,6 +386,7 @@ export function endWeek() {
   s.warden.mood = rng.weighted([['좋음', 25], ['보통', 50], ['나쁨', 25]]);
   s.turn += 1;
   s.weekLabel = weekLabel(s.turn);
+  incomeIfNewSemester(s); // 학기 초 예산 수입 (룰북 3.6)
   s.freeObservations = 0;
   s.usedThisWeek = {};
   s.overtime = 0;

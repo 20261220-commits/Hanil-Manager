@@ -341,7 +341,7 @@ function soccerSegment(m, rng) {
   goals.sort((a, b) => a.min - b.min);
   for (const g of goals) {
     m.score[g.si]++;
-    m.log.push({ seg: m.seg, side: g.si, tone: 'goal', text: `${g.min}분 ⚽ ${g.name} 골! (${m.score[0]}:${m.score[1]})` });
+    m.log.push({ seg: m.seg, side: g.si, tone: 'goal', text: `${g.min}분 ${g.name} 골! (${m.score[0]}:${m.score[1]})` });
   }
   m.log.push({ seg: m.seg, side: null, text: `${segName} 끝: 슈팅 기회 ${A.name} ${chances[0]} · ${B.name} ${chances[1]}` });
   // 실점 기록 (골키퍼·수비 평점용)

@@ -126,7 +126,7 @@ export function renderNewGame(app) {
         <span class="note">시작할 선생님</span>
         <b class="who-big">${esc(draft.title)} ${esc(draft.name)} 선생님</b>
         <span>${sub.name} 담당 · ${sub.bonus} +2 · 1학년 4반 담임</span>
-        ${draft.traits ? `<span class="note">교사 특성: ${draft.traits.map((t) => `${esc(t.emoji)} ${esc(t.name)}`).join(', ')}</span>` : ''}
+        ${draft.traits ? `<span class="note">교사 특성: ${draft.traits.map((t) => esc(t.name)).join(', ')}</span>` : ''}
       </div>
       ${draft.confirmOverwrite && target.summary ? `<p class="field-error">${draft.slotN}번 칸의 "${esc(target.summary.name)} 선생님" 기록이 지워집니다. 한 번 더 누르면 시작합니다.</p>` : ''}`;
   }

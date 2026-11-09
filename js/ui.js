@@ -45,7 +45,7 @@ export const LUCK_COLOR = { 빨: 'var(--luck-1)', 주: 'var(--luck-2)', 노: 'va
 // 교사 프로필 특성 카드
 export function traitCards(traits) {
   return `<div class="ptraits">${traits.map((t) => `
-    <article class="ptrait"><header><span class="pemoji" aria-hidden="true">${esc(t.emoji)}</span><b>${esc(t.name)}</b></header>
+    <article class="ptrait"><header><b>${esc(t.name)}</b></header>
       ${t.desc ? `<p class="note">${esc(t.desc)}</p>` : ''}
       <ul>${t.effects.map((e) => `<li class="${isGoodEffect(e) ? 'good' : e.key === 'catch' ? '' : 'bad'}">${esc(effectText(e))}</li>`).join('')}</ul>
     </article>`).join('')}</div>`;

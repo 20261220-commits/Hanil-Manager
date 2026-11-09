@@ -10,6 +10,8 @@ import {
 import { SCHOOL_RULES, POSTS, AGENDA_KIND, NOCONF_NEED, ROOM_GROWTH } from './content/council.js';
 import { FACTIONS, AI_FACTIONS, classLabel } from './content/factions.js';
 import { notify } from './chrome.js';
+import { isAlly, allyChance, allyBlock, negotiateAlliance, semesterIncome, nextIncomeTurn, OPS_AP, ALLY_WEEKS } from './game/intrigue.js';
+import { weekLabel } from './game/calendar.js';
 import { esc } from './ui.js';
 import { factionChip } from './school-view.js';
 
@@ -91,6 +93,7 @@ export function renderOffice(app) {
       <div class="tile-stat"><span class="lbl">우리 계파 표</span><b>${votes.player ?? 1} / ${total}</b></div>
       <div class="tile-stat"><span class="lbl">부장 자리</span><b>${postsOwned(s).length} / 4 · AP 최대 ${apMaxFor(s)}</b></div>
       <div class="tile-stat"><span class="lbl">정치력</span><b>${s.teacher['정치력']}${s.profile.subject === 'social' ? ' (+사회 과목 투표 +10%)' : ''}</b></div>
+      <div class="tile-stat"><span class="lbl">다음 학기 예산 (${weekLabel(nextIncomeTurn(s.turn)).split(' (')[0]})</span><b title="${esc(semesterIncome(s).lines.filter((l) => l[1]).map((l) => `${l[0]}: ${l[1]}`).join('\n'))}">+${semesterIncome(s).total}만원</b></div>
       <div class="tile-stat"><span class="lbl">AI 계파의 경계</span><b class="${th.tier ? 'warn-text' : ''}">${th.label}</b></div>
     </div>
 
@@ -99,9 +102,11 @@ export function renderOffice(app) {
     <div class="office-cols">
       <section class="panel">
         <h2>계파 관계 <span class="note">교섭하면 오르고, 손해 보는 안건·포섭 실패로 떨어집니다. -40 이하면 적대(우리를 더 노림)</span></h2>
+        <p class="note">동맹 협상 ${OPS_AP} AP: ${ALLY_WEEKS}주 동안 우리 땅을 공격하지 않고 교무회의에서 우리 쪽으로 기웁니다. 우리 반이 흔들리면(지지도 45% 미만) 배신할 수 있습니다.</p>
         <div class="rels">${AI_FACTIONS.map((f) => {
           const v = sc.rel[f] ?? 0; const [l, tone] = relLabel(v);
-          return `<div class="rel-row">${factionChip(f)}${sc.ai?.gone?.[f] ? '<span class="note">소멸</span>' : `<span class="relbar"><i style="left:50%;width:${Math.abs(v) / 2}%;${v < 0 ? `transform:translateX(-100%)` : ''}" class="${v < 0 ? 'neg' : 'pos'}"></i></span><span class="pill ${tone}">${l} ${v > 0 ? '+' : ''}${v}</span>`}<span class="note">${votes[f] ?? 0}표</span></div>`;
+          return `<div class="rel-row">${factionChip(f)}${sc.ai?.gone?.[f] ? '<span class="note">소멸</span>' : `<span class="relbar"><i style="left:50%;width:${Math.abs(v) / 2}%;${v < 0 ? `transform:translateX(-100%)` : ''}" class="${v < 0 ? 'neg' : 'pos'}"></i></span><span class="pill ${tone}">${l} ${v > 0 ? '+' : ''}${v}</span>`}<span class="note">${votes[f] ?? 0}표</span>${sc.ai?.gone?.[f] ? '' : isAlly(s, f) ? `<span class="pill good">동맹 ${sc.allies[f] - s.turn}주 남음</span>`
+            : (() => { const b = allyBlock(s, f); return b && !b.startsWith('AP') ? `<span class="note">${esc(b)}</span>` : `<button type="button" class="btn small" data-ally="${f}" ${b ? 'disabled' : ''}>동맹 협상 ${pct(allyChance(s, f))}</button>`; })()}</div>`;
         }).join('')}</div>
       </section>
       <section class="panel">
@@ -142,6 +147,7 @@ export function renderOffice(app) {
   app.querySelector('#propose')?.addEventListener('click', () => notify(propose(form.kind, form.target)));
   app.querySelector('#cancel')?.addEventListener('click', () => notify(cancelAgenda()));
   app.querySelectorAll('[data-lobby]').forEach((b) => b.addEventListener('click', () => notify(lobby(b.dataset.lobby))));
+  app.querySelectorAll('[data-ally]').forEach((b) => b.addEventListener('click', () => notify(negotiateAlliance(b.dataset.ally))));
   app.querySelectorAll('[data-recruit]').forEach((b) => b.addEventListener('click', () => notify(recruitTeacher(b.dataset.recruit))));
   app.querySelectorAll('input[name=tf]').forEach((r) => r.addEventListener('change', () => { teachFilter = r.value; rerender(); }));
   app.querySelector('#set-teach')?.addEventListener('click', () => {

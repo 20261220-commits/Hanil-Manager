@@ -439,7 +439,6 @@ html.text-large .roster, html.text-large .stats, html.text-large .note { font-si
 .ptrait { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 6px; align-content: start; background: var(--surface); }
 .ptrait header { display: flex; gap: 8px; align-items: center; }
 .ptrait b { font-size: 15px; }
-.pemoji { font-size: 20px; line-height: 1; }
 .ptrait ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; font-size: 12.5px; }
 .ptrait li::before { content: "· "; color: var(--muted); }
 .ptrait li.good { color: var(--good); } .ptrait li.bad { color: var(--bad); }
@@ -455,7 +454,6 @@ html.text-large .roster, html.text-large .stats, html.text-large .note { font-si
 .sidenav a { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; color: var(--muted); font-weight: 500; text-decoration: none; white-space: nowrap; }
 .sidenav a:hover { background: var(--soft); color: var(--ink); }
 .sidenav a[aria-current="true"] { background: var(--ink); color: var(--paper); }
-.sidenav .ni { width: 20px; text-align: center; font-size: 15px; }
 .sidenav .count { margin-left: auto; }
 .sidenav .nav-exit { margin-top: auto; border: 1px solid var(--line); color: var(--ink); }
 .sidenav .nav-exit:hover { border-color: var(--accent); }

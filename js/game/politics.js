@@ -5,6 +5,7 @@ import { placeById, placeInfo, classById, transfer } from './school.js';
 import { teacherStat } from './turn.js';
 import { threat } from './ai.js';
 import { semesterOf } from './persona.js';
+import { isAlly } from './intrigue.js';
 import { SURNAMES, GIVEN } from '../content/names.js';
 import { FACTIONS, AI_FACTIONS, classLabel } from '../content/factions.js';
 import { SCHOOL_RULES, ruleById, POSTS, AGENDA_KIND, NOCONF_NEED } from '../content/council.js';
@@ -81,6 +82,7 @@ export function yesChance(s, f, a) {
     p += (teacherStat('정치력') - 10) * 0.03 + (s.profile.subject === 'social' ? 0.1 : 0);
     if (f !== 'none') p += (s.school.rel[f] ?? 0) / 250 - threat(s).tier * 0.07;
     if (a.lobbied?.[f]) p += 0.25;
+    if (isAlly(s, f)) p += 0.2; // 동맹은 교무회의에서 우리 편으로 기운다
   }
   return clamp(p, 0.03, 0.97);
 }
@@ -242,6 +244,7 @@ function aiAgenda(s, rng) {
     for (const p of sc.places) {
       const info = placeInfo(p.id);
       if (p.owner === f) continue;
+      if (isAlly(s, f) && p.owner === 'player') continue; // 동맹은 우리 자리를 노리지 않는다
       if (info.kind === 'special') cands.push({ w: w * (p.owner === 'player' ? th.mult * 1.5 : 1), a: { kind: 'room', target: p.id, proposer: f } });
       if (POSTS[p.id] && p.owner === 'player') cands.push({ w: w * 2 * th.mult, a: { kind: 'noconf', target: p.id, proposer: f } });
     }

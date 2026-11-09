@@ -7,6 +7,7 @@ import { TITLES } from '../content/titles.js';
 import { makeSchool, extraTiles } from './school.js';
 import { applyPersona } from './persona.js';
 import { ensureCouncil, apMaxFor } from './politics.js';
+import { ensureIntrigue } from './intrigue.js';
 
 export const SLOT_COUNT = 3;
 const VERSION = 4;
@@ -45,6 +46,7 @@ function upgrade(s) {
   s.school ??= makeSchool(s.seed, s.profile.name);
   if (!s.school.places) Object.assign(s.school, extraTiles());
   ensureCouncil(s);
+  ensureIntrigue(s);
   s.apMax = apMaxFor(s);
   s.duel ??= null;
   for (const st of s.students) {
