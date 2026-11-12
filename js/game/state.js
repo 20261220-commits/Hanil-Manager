@@ -10,6 +10,7 @@ import { ensureCouncil, apMaxFor } from './politics.js';
 import { ensureIntrigue } from './intrigue.js';
 import { ensureExam } from './exam.js';
 import { ensureElection } from './election.js';
+import { ensureRoutes } from './routes.js';
 
 export const SLOT_COUNT = 3;
 const VERSION = 4;
@@ -51,6 +52,7 @@ function upgrade(s) {
   ensureIntrigue(s);
   ensureExam(s);
   ensureElection(s);
+  ensureRoutes(s);
   s.apMax = apMaxFor(s);
   s.duel ??= null;
   for (const st of s.students) {

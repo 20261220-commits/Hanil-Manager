@@ -274,7 +274,7 @@ export function createMatch(sport, a, b, rng, extra = {}) {
       players, lineup, tactics, subsLeft: SPORTS[sport].subs,
       // 경기 당일 컨디션 (9.3): 스포츠 3종목만
       form: SPORTS[sport].group === 'sport' ? clamp(1 + rng.gauss() * 0.15, 0.6, 1.4) : 1,
-      readiness: x.readiness,
+      readiness: x.readiness, badLuck: x.badLuck ?? 1,
       stats: {}, segMult: {}, used: lineup.map((l) => l.id),
       bat: 0, pitcher: { id: lineup.find((l) => l.pos === 'P')?.id, faced: 0, fatigue: 1, relieved: false },
     };
@@ -329,7 +329,8 @@ function rollSegmentEvents(m, rng) {
     for (const l of side.lineup) {
       if (l.pos === 'RP') continue;
       const p = side.players[l.id];
-      const [good, bad] = LUCK_P[p.luck] ?? LUCK_P.노;
+      const [good, bad0] = LUCK_P[p.luck] ?? LUCK_P.노;
+      const bad = bad0 * (side.badLuck ?? 1);
       const r = rng.next();
       if (r < good) { side.segMult[l.id] = 1.3; m.log.push({ seg: m.seg, side: si, tone: 'good', text: `${segName}: ${p.name}에게 행운이 따릅니다 (전력 ×1.3)` }); }
       else if (r < good + bad) { side.segMult[l.id] = 0.7; m.log.push({ seg: m.seg, side: si, tone: 'bad', text: `${segName}: ${p.name}이(가) 운이 없습니다 (전력 ×0.7)` }); }

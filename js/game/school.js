@@ -7,6 +7,7 @@ import { MORALE } from '../content/stats.js';
 import { PLACES, DORM_C } from '../content/places.js';
 import { mod } from './persona.js';
 import { yearTurn } from './calendar.js';
+import { followerBonus as followerBonusOf } from '../content/routes.js';
 
 export const MORALE_MULT = [0.85, 0.92, 0.96, 1, 1.03, 1.06, 1.1];
 export const moraleMult = (m) => MORALE_MULT[Math.max(0, MORALE.indexOf(m))];
@@ -150,7 +151,8 @@ export const playerClasses = (s) => s.school.classes.filter((c) => c.owner === '
 // 지지도가 오를수록 남은 사람을 설득하기 어려워지므로 (1 - 지지도)² 만큼 줄어든다 (프로토타입 조정).
 export function dailyInfluence(s, cls) {
   if (cls.id !== HOMEROOM_ID) return 0;
-  const raw = s.students.reduce((a, st) => a + (st.stats['친화력'] / 20) * 0.5 * moraleMult(st.morale), 0) * (1 + mod(s, 'influence') / 100);
+  const fol = s.routes?.inf?.unlocked ? followerBonusOf(s.routes.inf.followers) : 0; // 인플루언서 팔로워 보너스
+  const raw = s.students.reduce((a, st) => a + (st.stats['친화력'] / 20) * 0.5 * moraleMult(st.morale), 0) * (1 + mod(s, 'influence') / 100 + fol / 100);
   return raw * (1 - cls.support.player / 100) ** 2;
 }
 

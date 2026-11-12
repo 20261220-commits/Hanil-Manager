@@ -16,6 +16,10 @@ export const TITLES = [
   { name: '외교관', how: '다른 계파와 처음으로 동맹을 맺음', check: (s) => (s.counters.alliance ?? 0) >= 1 },
   { name: '선거 참모', how: '반장 선거에서 우리 쪽 후보를 당선시킴', check: (s) => (s.counters.electionWin ?? 0) >= 1 },
   { name: '1등 반 담임', how: '시험에서 담임반이 학년 1등', check: (s) => (s.counters.examFirst ?? 0) >= 1 },
+  { name: '흑막', how: '싸움에서 3번 이김 (패도)', check: (s) => (s.counters.fightWin ?? 0) >= 3 },
+  { name: '정의의 사도', how: '비리를 처음으로 폭로함 (내부고발자)', check: (s) => (s.counters.expose ?? 0) >= 1 },
+  { name: '크리에이터', how: '학교 채널 콘텐츠 10개 (인플루언서)', check: (s) => (s.counters.content ?? 0) >= 10 },
+  { name: '오컬트 탐정', how: '학교 괴담 하나를 풂', check: (s) => (s.counters.mystery ?? 0) >= 1 },
   { name: '한 학기 생존자', how: '1학기를 끝까지 버팀 (여름방학 도달)', check: (s) => s.turn >= 21 },
 ];
 

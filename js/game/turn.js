@@ -13,6 +13,8 @@ import { intrigueWeekly, answerAllianceOffer, incomeIfNewSemester } from './intr
 import { examWeekly } from './exam.js';
 import { resolveElection, ensureElection } from './election.js';
 import { meetingWeekly } from './meeting.js';
+import { routesWeekly, markTrust, answerPuzzle, ghostGrowth, isOut } from './routes.js';
+import { answerRooftop } from './fight.js';
 import { prepWeekly } from './duel.js';
 import { ROOM_GROWTH } from '../content/council.js';
 import { placeById } from './school.js';
@@ -79,6 +81,7 @@ export function doCounsel(id) {
     const amount = st.personality === '외로움 탐' ? 30 : 20;
     lowerNeeds(st, amount, need);
     shiftMorale(st, 1);
+    if (s.routes?.ghost?.madness?.[st.id]) s.routes.ghost.madness[st.id] = Math.max(0, s.routes.ghost.madness[st.id] - 15); // 상담으로 광기 회복
     st.bond = clamp(st.bond + 5, 0, 100);
     count('counselOK');
     return done(`${st.name}와 이야기가 잘 통했습니다. 사기가 올랐고 고민(${needName(need)})이 ${amount} 줄었습니다.`);
@@ -187,6 +190,16 @@ export function resolveDecision(msgId, choice) {
   const s = getState();
   const m = s.inbox.find((x) => x.id === msgId);
   if (!m || m.resolved) return fail('이미 처리한 일입니다.');
+  if (m.rooftop) {
+    const r = answerRooftop(s, m, choice);
+    m.resolved = choice; m.read = true; m.result = r;
+    return done(r);
+  }
+  if (m.ghost) {
+    const r = answerPuzzle(s, m, choice);
+    m.resolved = choice; m.read = true; m.result = r;
+    return done(r);
+  }
   if (m.ally) {
     const r = answerAllianceOffer(s, m, choice);
     m.resolved = choice; m.read = true; m.result = r;
@@ -257,7 +270,7 @@ export function endWeek() {
       if (placeById(s, room)?.owner !== 'player') continue;
       if ((g.group === 'mind' && MIND.includes(k)) || (g.group === 'body' && BODY.includes(k)) || g.stats?.includes(k)) v *= g.mult;
     }
-    statMult[k] = v;
+    statMult[k] = v * ghostGrowth(s, k); // 괴담 해결 보상 (12.6)
   }
 
   for (const st of s.students) {
@@ -388,6 +401,7 @@ export function endWeek() {
   aiWeek(s, rng); // AI 계파 행동 (룰북 7.5)
   councilWeekly(s, rng); // 교무회의 표결, AI 안건, 흡수 교사 영향력, 부장 자리 AP
   intrigueWeekly(s, rng); // 포섭한 학생 영향력, 동맹 배신·만료, AI 동맹 제안
+  routesWeekly(s, rng); // 특수 루트: 패도 해금·열기·공포, 고발 사건, 논란, 괴담·광기 (12장)
   for (const msg of weeklySchool(s, rng)) addMessage(msg);
   if (yearTurn(s.turn) === 20) {
     const g = semesterGoal(s);
@@ -414,6 +428,7 @@ export function endWeek() {
   if (s.warden.mood === '나쁨') addMessage({ kind: 'info', title: '사감 선생님 기분이 안 좋습니다', body: '주식이 떨어졌다는 소문입니다. 이번 주는 일탈이 걸리기 쉽습니다.' });
   const ev = eventOf(s.turn);
   if (ev) addMessage({ kind: 'info', title: `이번 주 일정: ${ev}`, body: eventText(ev) });
+  markTrust(s);
   return done(`새로운 주가 시작됐습니다: ${s.weekLabel}`);
 }
 

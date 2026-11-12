@@ -99,7 +99,7 @@ function renderSetup(app, s, cls) {
         <div class="table-wrap"><table class="roster lineup"><thead><tr><th>자리</th><th>학생</th><th>적합도</th><th>컨디션</th><th>사기</th></tr></thead><tbody>
           ${draft.lineup.map((l, i) => { const st = byId(s, l.id); return `<tr>
             <td>${POS_LABEL[l.pos]}</td>
-            <td><select data-slot="${i}" aria-label="${POS_LABEL[l.pos]} 자리">${s.students.map((x) => `<option value="${x.id}" ${x.id === l.id ? 'selected' : ''}>${esc(x.name)} (${one(fit(x, l.pos))})</option>`).join('')}</select></td>
+            <td><select data-slot="${i}" aria-label="${POS_LABEL[l.pos]} 자리">${s.students.filter((x) => !((x.outUntil ?? 0) > s.turn)).map((x) => `<option value="${x.id}" ${x.id === l.id ? 'selected' : ''}>${esc(x.name)} (${one(fit(x, l.pos))})</option>`).join('')}</select></td>
             <td class="num">${one(fit(st, l.pos))}</td><td class="num ${st.condition < 70 ? 'warn-text' : ''}">${st.condition}%</td><td>${moralePill(st.morale)}</td></tr>`; }).join('')}
         </tbody></table></div>
         <p class="note">벤치 ${bench.length}명 · 교체 ${sp.subs >= 10 ? '자유' : `${sp.subs}번`}. 컨디션이 낮으면 전력이 떨어집니다 (80% ×0.93, 60% ×0.85).</p>

@@ -118,7 +118,7 @@ function runDay(s, e, rng) {
   const R = e.results;
   for (const cls of s.school.classes.filter((c) => c.grade === grade)) {
     const ours = cls.id === HOMEROOM_ID;
-    const roster = ours ? s.students : rosterOf(s, cls);
+    const roster = ours ? s.students.filter((st) => !((st.outUntil ?? 0) > s.turn)) : rosterOf(s, cls);
     const cr = (R.classes[cls.id] ??= { total: 0, days: [], strategy: ours ? e.strategy : aiStrategy(cls, makeRng(cls.seed + e.turn)) });
     const bonusOf = strategyBonus(cr.strategy, roster);
     const nightBonus = ours && day > 0 && e.lastNight === 'review' ? 4 : 0;

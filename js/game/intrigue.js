@@ -42,6 +42,7 @@ export function studentRecruitChance(s, cls, st, scholarship = 0) {
   const owner = cls.owner;
   return clamp(0.25 + (aff - 9) * 0.04 + fame * 0.03 + (owner === 'none' ? 0.2 : 0)
     + (placeById(s, 'club')?.owner === 'player' ? 0.1 : 0) + (placeById(s, 'roof')?.owner === 'player' ? 0.05 : 0)
+    + (s.routes?.ghost?.solved?.includes('roof') ? 0.1 : 0)
     - ((cls.support[owner] ?? 50) - 50) / 250 - (st.stats['자존감'] - 10) * 0.015 - (st.stats['통솔'] - 10) * 0.01
     + Math.min(SCHOLARSHIP_MAX, scholarship) / 100, 0.05, 0.9);
 }

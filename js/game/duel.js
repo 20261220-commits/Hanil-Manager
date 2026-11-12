@@ -9,6 +9,7 @@ import { FACTIONS, HOMEROOM_ID, classLabel } from '../content/factions.js';
 import { makeClassRoster } from './students.js';
 import { teacherStat, shiftMorale } from './turn.js';
 import { mod } from './persona.js';
+import { fearToRespect, isOut, solved } from './routes.js';
 
 export const DUEL_AP = 2;
 export const SCOUT_AP = 1;
@@ -82,7 +83,8 @@ export function playerSide(s, draft) {
   return {
     key: 'player', name: s.className, faction: 'player',
     lead: teacherStat('지도력'), bonus: subjectBonus(s), home: false,
-    players: s.students, lineup: draft?.lineup, tactics: draft?.tactics,
+    players: s.students.filter((st) => !isOut(s, st)), lineup: draft?.lineup, tactics: draft?.tactics,
+    badLuck: solved(s, 'skull') ? 0.8 : 1, // 괴담 "과학실 해골": 불운 -20%
   };
 }
 
@@ -139,7 +141,7 @@ export function preview(s, t, sport) {
 // t를 주고 상대 분석을 했으면, 토론은 상대 스타일과 심사위원을 보고 가장 유리한 스타일을 고른다
 export function autoSetup(s, sport, tactics, t = null) {
   const base = { ...playerSide(s), tactics: { ...SPORTS[sport].defaults, ...tactics } };
-  const lineup = autoLineup(s.students, SPORTS[sport].positions(base.tactics));
+  const lineup = autoLineup(s.students.filter((st) => !isOut(s, st)), SPORTS[sport].positions(base.tactics));
   const combo = bestTactics(sport, { ...base, lineup }, (k) => makeRng(s.seed + k * 13 + s.turn), 24);
   if (sport === 'debate' && t && scouted(s, t.id)) {
     const opp = oppTacticsOf(s, t, 'debate').style, judge = JUDGES[judgeOf(s, t)];
@@ -333,7 +335,7 @@ function applyResult(s, d, rng) {
     const rec = t.cls.record;
     if (win === true) rec.w++; else if (win === false) rec.l++; else rec.d++;
   }
-  if (win === true) count('duelWin');
+  if (win === true) { count('duelWin'); fearToRespect(s, t.id, 10); } // 정도 대결 승리: 공포 10%p를 존경으로
   if (conquered) count(t.kind === 'class' ? 'conquer' : 'conquerPlace');
   if (absorbed) count('absorbed');
 
