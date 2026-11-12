@@ -1,7 +1,7 @@
 // 화면 전환
 // 게임 밖: #title 대기 화면 · #new 새로 플레이 · #saves 세이브 파일 · #settings 설정
 // 게임 안: #campus 캠퍼스 · #b-<건물> 평면도 · #class 담임반 · #s-<학생> 학생 · #school 교내 판도 · #duel-<반> 대결 · #office 교무실 · #ops-<반> 공작 · #exam 시험 · #election 반장 선거 · #meeting 반 편성
-//          #inbox 받은 편지함 · #plan 행동·훈련 · #profile 프로필
+//          #news 소식(기본 화면) · #inbox 받은 편지함 · #plan 행동·훈련 · #profile 프로필
 import { renderCampus } from './campus.js';
 import { renderBuilding } from './building.js';
 import { renderHomeroom } from './homeroom.js';
@@ -17,6 +17,7 @@ import { renderExam } from './exam-view.js';
 import { renderElection } from './election-view.js';
 import { renderMeeting } from './meeting-view.js';
 import { renderRoutes } from './routes-view.js';
+import { renderNews } from './news-view.js';
 import { renderLoading, renderTitle, renderNewGame, renderSaves, renderSettings, resetDraft } from './menu.js';
 import { renderGamebar, toast } from './chrome.js';
 import { isPlaying, quitToTitle, migrateOldSave } from './game/state.js';
@@ -56,6 +57,7 @@ async function route({ keepScroll = false } = {}) {
     else if (hash === 'meeting') crumbs = renderMeeting(app);
     else if (hash === 'routes') crumbs = renderRoutes(app);
     else if (hash.startsWith('ops-')) crumbs = renderOps(app, hash.slice(4));
+    else if (hash === 'news') crumbs = renderNews(app, { fresh: !keepScroll });
     else if (hash === 'inbox') crumbs = renderInbox(app);
     else if (hash === 'plan') crumbs = renderPlan(app);
     else if (hash === 'profile') crumbs = renderProfile(app);
@@ -65,7 +67,7 @@ async function route({ keepScroll = false } = {}) {
       (i ? '<span aria-hidden="true">›</span>' : '') +
       (c.href ? `<a href="${c.href}">${c.label}</a>` : `<span aria-current="page">${c.label}</span>`)).join('');
     crumbsEl.hidden = crumbs.length < 2;
-    const section = hash === 'class' || hash.startsWith('s-') ? 'class' : hash === 'school' || hash.startsWith('duel-') || hash.startsWith('ops-') ? 'school' : ['inbox', 'plan', 'profile', 'office', 'exam', 'election', 'meeting', 'routes'].includes(hash) ? hash : 'campus';
+    const section = hash === 'class' || hash.startsWith('s-') ? 'class' : hash === 'school' || hash.startsWith('duel-') || hash.startsWith('ops-') ? 'school' : hash === 'news' ? 'inbox' : ['inbox', 'plan', 'profile', 'office', 'exam', 'election', 'meeting', 'routes'].includes(hash) ? hash : 'campus';
     document.querySelectorAll('.mainnav a').forEach((a) => a.setAttribute('aria-current', String(a.dataset.section === section)));
     renderGamebar();
     if (!keepScroll) window.scrollTo(0, 0);
@@ -84,6 +86,7 @@ async function boot() {
   history.replaceState(null, '', '#title');
   window.addEventListener('hashchange', () => route());
   window.addEventListener('game:changed', () => route({ keepScroll: true }));
+  window.addEventListener('game:news', () => route()); // 새 주: 소식 묶음을 새로 만든다
   route();
 }
 

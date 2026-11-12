@@ -61,7 +61,7 @@ export function renderTitle(app) {
       </div>
     </div>`;
   app.querySelector('#continue')?.addEventListener('click', () => {
-    if (loadSlot(last)) location.hash = 'campus';
+    if (loadSlot(last)) location.hash = 'news';
     else toast('세이브를 불러오지 못했습니다.', true);
   });
 }
@@ -170,7 +170,7 @@ export function renderNewGame(app) {
     newGame({ name: draft.name, subject: draft.subject, title: draft.title, slotN: draft.slotN,
       persona: draft.traits ? { bio: draft.bio.trim(), traits: draft.traits, source: draft.source } : null });
     resetDraft();
-    location.hash = 'campus';
+    location.hash = 'news';
   });
   return [];
 }
@@ -207,7 +207,7 @@ export function renderSaves(app) {
     </div>`;
 
   app.querySelectorAll('[data-load]').forEach((b) => b.addEventListener('click', () => {
-    if (loadSlot(+b.dataset.load)) location.hash = 'campus'; else toast('불러오지 못했습니다.', true);
+    if (loadSlot(+b.dataset.load)) location.hash = 'news'; else toast('불러오지 못했습니다.', true);
   }));
   app.querySelectorAll('[data-export]').forEach((b) => b.addEventListener('click', () => {
     const n = +b.dataset.export;

@@ -37,11 +37,12 @@ export function renderGamebar() {
     <button type="button" class="btn primary gb-next" id="next-week">다음 주로 ▶</button>`;
   bar.querySelector('#next-week').addEventListener('click', () => {
     const r = endWeek();
-    if (!r.ok) { toast(r.msg, true); location.hash = s.duel && !s.duel.m.done ? `duel-${s.duel.classId}` : 'inbox'; return; }
+    if (!r.ok) { toast(r.msg, true); const to = s.duel && !s.duel.m.done ? `duel-${s.duel.classId}` : 'news'; if (location.hash === `#${to}`) window.dispatchEvent(new CustomEvent('game:news')); else location.hash = to; return; }
     toast(r.msg);
     deliverPersonaEvent(); // 프로필 이벤트가 예약됐으면 만들어 편지함에 넣는다 (AI는 몇 초 걸릴 수 있음)
-    if (location.hash === '#inbox') window.dispatchEvent(new CustomEvent('game:changed'));
-    else location.hash = 'inbox';
+    // 새 주가 되면 소식 화면에서 읽지 않은 소식부터 본다
+    if (location.hash === '#news') window.dispatchEvent(new CustomEvent('game:news'));
+    else location.hash = 'news';
   });
 
   document.getElementById('who').textContent = `${s.profile.title} ${s.profile.name} 선생님`;

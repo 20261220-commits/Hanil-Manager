@@ -515,3 +515,34 @@ body[data-mode="menu"] .sidenav { display: none; }
 .fight-log.good b { color: var(--good); } .fight-log.bad b { color: var(--bad); }
 .chips.cast .chip { display: inline-flex; gap: 4px; align-items: center; }
 .tile-stat .meter.wide { margin-top: 4px; }
+
+/* 소식 화면 (기본 화면) */
+.news-screen { display: grid; gap: 12px; min-height: calc(100vh - 140px); grid-template-rows: auto 1fr auto; }
+.news-top { display: flex; align-items: stretch; gap: 8px; flex-wrap: wrap; }
+.news-head { display: grid; gap: 2px; margin-right: auto; }
+.news-date { display: grid; place-items: center; padding: 6px 16px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); font-family: var(--mono); font-size: 13px; }
+.news-flag { display: grid; place-items: center; padding: 6px 18px; border-radius: 10px; background: var(--warn); color: #fff; font-weight: 700; letter-spacing: .5px; }
+.news-body { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+.news-card { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 12px; padding: 20px 24px; display: grid; gap: 12px; align-content: start; min-height: 320px; }
+.news-card.k-event { border-left-color: var(--warn); } .news-card.k-warn { border-left-color: var(--bad); } .news-card.k-report { border-left-color: var(--rare); }
+.news-card h2 { font-family: var(--display); font-weight: 400; font-size: clamp(19px, 2.4vw, 24px); color: var(--accent); letter-spacing: .3px; }
+.news-card.k-event h2 { color: var(--warn); } .news-card.k-warn h2 { color: var(--bad); }
+.news-card p { margin: 0; font-size: 15.5px; line-height: 1.75; }
+.news-result { color: var(--good); font-weight: 600; }
+.news-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.news-tag { font-size: 12.5px; padding: 3px 12px 3px 10px; border-radius: 4px 999px 999px 4px; background: var(--soft); color: var(--muted); border: 1px solid var(--line); }
+.news-side { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; display: grid; gap: 8px; padding-bottom: 14px; }
+.news-portrait { height: 150px; display: grid; place-items: center; background: linear-gradient(160deg, var(--soft), var(--line)); }
+.news-portrait .avatar { width: 84px; height: 84px; border-radius: 50%; display: grid; place-items: center; background: var(--ink); color: var(--paper); font-family: var(--display); font-size: 36px; }
+.news-role { background: var(--accent); color: var(--accent-ink); text-align: center; font-family: var(--display); font-size: 18px; padding: 6px; margin-top: -8px; }
+.news-sub { margin: 0; text-align: center; font-weight: 600; }
+.news-kv { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; margin: 0; padding: 0 16px; font-size: 14px; }
+.news-kv dt { color: var(--muted); } .news-kv dd { margin: 0; font-weight: 600; text-align: right; }
+.news-side .btn { justify-self: center; }
+.news-bar { position: sticky; bottom: 0; display: flex; gap: 8px; flex-wrap: wrap; padding: 10px 0 calc(10px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(transparent, var(--paper) 30%); }
+.news-bar .btn { flex: 1 1 140px; min-height: 48px; display: grid; align-content: center; text-align: center; }
+.news-choice { gap: 2px; }
+.news-choice span { font-weight: 400; font-size: 12px; opacity: .85; }
+.news-nav { background: var(--soft); }
+@media (max-width: 900px) { .news-body { grid-template-columns: 1fr; } .news-side { grid-template-columns: 1fr; } .news-portrait { height: 100px; } }
+@media (max-width: 900px) { .news-bar { position: static; background: none; } .news-screen { min-height: 0; } }

@@ -39,5 +39,5 @@ export function renderInbox(app) {
   for (const m of s.inbox) if (!m.read && !m.choices) { m.read = true; changed = true; }
   if (changed) save();
 
-  return [{ label: '받은 편지함' }];
+  return [{ label: '소식', href: '#news' }, { label: '받은 편지함' }];
 }
