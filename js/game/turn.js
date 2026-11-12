@@ -1,7 +1,7 @@
 // 턴 진행: 주간 행동(AP)과 주말 정산 (룰북 3장, 4.7~4.8, 13장)
 import { getState, save, studentById, nextRng, addMessage, pendingDecisions, count, checkTitles } from './state.js';
 import { observe, calcCA, needLevel, topNeed } from './students.js';
-import { weekLabel, eventOf, nearExam, isHomecoming } from './calendar.js';
+import { weekLabel, eventOf, nearExam, isHomecoming, yearTurn } from './calendar.js';
 import { STAT_GROUPS, STAT_LABEL, MORALE } from '../content/stats.js';
 import { PERSONALITIES } from '../content/personality.js';
 import { clamp } from './rng.js';
@@ -11,7 +11,8 @@ import { mod, personaWeekly, resolvePersonaChoice } from './persona.js';
 import { councilWeekly, voteOnAiAgenda, ruleOn } from './politics.js';
 import { intrigueWeekly, answerAllianceOffer, incomeIfNewSemester } from './intrigue.js';
 import { examWeekly } from './exam.js';
-import { resolveElection } from './election.js';
+import { resolveElection, ensureElection } from './election.js';
+import { meetingWeekly } from './meeting.js';
 import { prepWeekly } from './duel.js';
 import { ROOM_GROWTH } from '../content/council.js';
 import { placeById } from './school.js';
@@ -203,6 +204,7 @@ export function resolveDecision(msgId, choice) {
     return done(r);
   }
   const st = studentById(m.ref.studentId);
+  if (!st) { m.resolved = 'expired'; m.read = true; m.result = '이미 진급한 학생입니다.'; return done('이미 진급한 학생이라 넘어갑니다.'); }
   let msg;
   if (choice === 'cover') {
     count('cover');
@@ -289,7 +291,7 @@ export function endWeek() {
     const self = (1 - st.stats['절제'] * 0.03) * (st.personality === '성실' ? 0.8 : st.personality === '덜렁' ? 1.2 : 1);
     const add = {
       play: rng.int(5, 11) * (st.personality === '장난' ? 1.5 : 1) * (ruleOn(s, 'study') ? 1.2 : 1) * (ruleOn(s, 'sports') ? 0.85 : 1),
-      home: rng.int(4, 9) * (s.turn <= 20 ? 1.3 : 1) * (st.personality === '외로움 탐' ? 2 : 1) * (ruleOn(s, 'phone') ? 0.7 : 1),
+      home: rng.int(4, 9) * (yearTurn(s.turn) <= 20 ? 1.3 : 1) * (st.personality === '외로움 탐' ? 2 : 1) * (ruleOn(s, 'phone') ? 0.7 : 1),
       grade: rng.int(2, 7) * (nearExam(s.turn) ? 2 : 1) * (st.trait === '완벽주의자' ? 1.5 : 1) * (st.personality === '무사태평' ? 0.5 : 1) * (ruleOn(s, 'study') ? 1.2 : 1),
       food: rng.int(4, 9) * (st.trait === '헬창' ? 1.5 : 1) * (ruleOn(s, 'snack') ? 0.7 : 1),
       recog: rng.int(3, 7) * (st.stats['자존감'] <= 7 ? 1.3 : 1),
@@ -382,11 +384,12 @@ export function endWeek() {
   examWeekly(s, rng); // 시험 주인데 직접 안 치렀으면 자동으로 (9.9)
   prepWeekly(s, rng); // 행사 기획 준비도, 당일 지난 행사는 위임 대결로 (9.11)
   resolveElection(s, rng); // 3월 2주 반장 선거 개표
+  meetingWeekly(s); // 사전 협상·졸업식·반 편성 회의 (안 끝냈으면 기본 배정으로 확정)
   aiWeek(s, rng); // AI 계파 행동 (룰북 7.5)
   councilWeekly(s, rng); // 교무회의 표결, AI 안건, 흡수 교사 영향력, 부장 자리 AP
   intrigueWeekly(s, rng); // 포섭한 학생 영향력, 동맹 배신·만료, AI 동맹 제안
   for (const msg of weeklySchool(s, rng)) addMessage(msg);
-  if (s.turn === 20) {
+  if (yearTurn(s.turn) === 20) {
     const g = semesterGoal(s);
     s.trust = clamp(s.trust + (g.ok ? 10 : -10), 0, 100);
     s.school.goalOk = g.ok; // 다음 학기 예산에 목표 달성 포상 +20
@@ -401,6 +404,7 @@ export function endWeek() {
   s.turn += 1;
   s.weekLabel = weekLabel(s.turn);
   incomeIfNewSemester(s); // 학기 초 예산 수입 (룰북 3.6)
+  ensureElection(s); // 새 학년이면 반장 선거 준비
   s.freeObservations = 0;
   s.usedThisWeek = {};
   s.overtime = 0;
@@ -439,6 +443,9 @@ function eventText(ev) {
     기말고사: '기말고사 주간입니다. 왼쪽 메뉴의 "시험"에서 시험을 치르세요.',
     '2학기 중간고사': '2학기 중간고사 주간입니다. 왼쪽 메뉴의 "시험"에서 시험을 치르세요.',
     '2학기 기말고사': '2학기 기말고사 주간입니다. 왼쪽 메뉴의 "시험"에서 시험을 치르세요.',
+    '겨울방학 · 사전 협상': '겨울방학이 시작됐습니다. 반 편성 회의까지 사전 협상 기간입니다. 왼쪽 메뉴의 "반 편성"에서 신입생 명단을 보고, 중학교 탐방과 동료 교사 친목을 할 수 있습니다.',
+    졸업식: '3학년 졸업식 주간입니다. 다음 주가 반 편성 회의입니다.',
+    '반 편성 회의': '반 편성 회의 주간입니다. 왼쪽 메뉴의 "반 편성"에서 회의를 열고 트레이드를 하세요. 그냥 넘기면 기본 배정으로 확정됩니다.',
     '학기 평가': '1학기 마지막 주입니다. 교장의 학기 평가가 있습니다.',
   }[ev] ?? '';
 }

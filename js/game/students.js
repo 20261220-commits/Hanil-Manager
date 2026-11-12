@@ -30,7 +30,7 @@ function uniqueName(rng, used) {
 
 // 1학년 학생 한 명. 공개 스탯은 5~12 (룰북 8.0)
 // opts.bonus: 2학년 +2, 3학년 +4처럼 모든 공개 스탯에 더하는 값
-function makeFreshman(rng, used, opts = {}) {
+export function makeFreshman(rng, used, opts = {}) {
   const base = opts.base ?? 6 + rng.next() * 4;
   const bonus = opts.bonus ?? 0;
   const stats = {};
@@ -108,6 +108,29 @@ export function makeClassRoster(rng, grade, turn, owner, size = 30) {
   }
   list.sort((a, b) => a.name.localeCompare(b.name, 'ko')).forEach((st, i) => { st.id = `o${String(i + 1).padStart(2, '0')}`; st.no = i + 1; });
   return list;
+}
+
+// ---------- 저장용 학생 (반 편성 뒤 다른 반 학생도 기억한다) ----------
+
+// 담임반 밖 학생은 가볍게 저장한다. since: 저장한 턴 (그 뒤 12주마다 모든 스탯 +1)
+export function toCompact(st, since) {
+  return {
+    id: st.id, n: st.name, g: st.grade, s: STATS.map((k) => st.stats[k]), p: st.pa, pt: st.potTier, l: st.luck,
+    pe: st.personality, t: st.trait, f: st.faction ?? 'none', b: st.bond ?? 50, m: st.morale ?? '보통', fe: st.fameExp ?? 0,
+    tg: st.tags ?? [], since,
+  };
+}
+
+export function fromCompact(c, turn) {
+  const bonus = Math.max(0, Math.floor((turn - c.since) / 12));
+  const stats = Object.fromEntries(STATS.map((k, i) => [k, clamp(c.s[i] + bonus, 1, 20)]));
+  const needs = {};
+  for (const n of NEEDS) needs[n.key] = 20;
+  return {
+    id: c.id, name: c.n, grade: c.g, stats, pa: c.p, potTier: c.pt, luck: c.l, personality: c.pe, trait: c.t,
+    ca: Math.min(calcCA(stats), c.p), faction: c.f, bond: c.b, morale: c.m, fameExp: c.fe, tags: [...(c.tg ?? [])],
+    condition: 100, needs, observed: false, estimate: null, prog: {}, focus: null, lastCounsel: 0, calmUntil: 0,
+  };
 }
 
 // 학생 관찰 (룰북 4.4): 교사 안목이 낮을수록 포텐 추정 범위가 넓고 부정확하다.

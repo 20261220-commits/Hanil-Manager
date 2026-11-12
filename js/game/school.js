@@ -1,11 +1,12 @@
 // 교내 판도: 반 24개, 담임 교사, 반 지지도 (룰북 8.0, 8.2)
 import { makeRng, clamp } from './rng.js';
-import { makeClassRoster } from './students.js';
+import { makeClassRoster, fromCompact } from './students.js';
 import { FACTION_KEYS, AI_FACTIONS, START_OWNERS, HOMEROOM_ID, FACTIONS, classLabel } from '../content/factions.js';
 import { SURNAMES, GIVEN } from '../content/names.js';
 import { MORALE } from '../content/stats.js';
 import { PLACES, DORM_C } from '../content/places.js';
 import { mod } from './persona.js';
+import { yearTurn } from './calendar.js';
 
 export const MORALE_MULT = [0.85, 0.92, 0.96, 1, 1.03, 1.06, 1.1];
 export const moraleMult = (m) => MORALE_MULT[Math.max(0, MORALE.indexOf(m))];
@@ -106,8 +107,11 @@ export function buildingOwners(s, buildingId) {
 export const classById = (s, id) => s.school.classes.find((c) => c.id === id);
 
 // 다른 반 학생 명단 (저장하지 않고 시드로 재생성)
+// 반 편성 회의를 한 번 거친 반은 저장된 명단(s.school.rosters)을 쓴다.
 export function rosterOf(s, cls) {
   if (cls.id === HOMEROOM_ID) return s.students;
+  const stored = s.school.rosters?.[cls.id];
+  if (stored) return stored.map((c) => fromCompact(c, s.turn));
   return makeClassRoster(makeRng(cls.seed), cls.grade, s.turn, cls.owner);
 }
 
@@ -182,7 +186,7 @@ export function weeklySchool(s, rng) {
   }
 
   // 3월 2주: 반장 선거 (8.2). 지지도 1위 세력의 후보가 유리하다.
-  if (s.turn === 2) {
+  if (yearTurn(s.turn) === 2) {
     for (const cls of sc.classes) {
       if (cls.id === HOMEROOM_ID) continue;
       cls.captain = leader(cls);

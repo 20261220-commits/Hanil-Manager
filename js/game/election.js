@@ -5,8 +5,11 @@ import { clamp } from './rng.js';
 import { classById, transfer } from './school.js';
 import { shiftMorale } from './turn.js';
 import { HOMEROOM_ID } from '../content/factions.js';
+import { yearOf } from './calendar.js';
 
+// 해마다 3월 2주 (그해 2번째 주)
 export const ELECTION_TURN = 2;
+export const electionTurnOf = (turn) => yearOf(turn) * 48 + ELECTION_TURN;
 export const CAMPAIGN = {
   speech: { name: '연설 지도', stats: ['언어력', '자존감'], desc: '후보의 언어력·자존감으로 연설을 다듬습니다' },
   pledge: { name: '공약 다듬기', stats: ['기획력', '창의성'], desc: '후보의 기획력·창의성으로 공약을 만듭니다' },
@@ -17,15 +20,16 @@ export const CAMPAIGN_AP = 1;
 const candPower = (st) => ((st.stats['통솔'] * 2 + st.stats['친화력'] * 2 + st.stats['언어력'] + st.stats['자존감']) / 6) * (1 + (st.stats['평정심'] - 10) * 0.01);
 
 export function ensureElection(s) {
-  if (s.election || s.turn > ELECTION_TURN) return s.election ?? null;
+  const et = electionTurnOf(s.turn);
+  if ((s.election && s.election.turn === et) || s.turn > et) return s.election ?? null;
   const by = (k) => [...s.students].sort((a, b) => b.stats[k] - a.stats[k]);
   const ours = s.students.find((st) => st.tags.includes('leader')) ?? by('통솔')[0];
   const rival = [...s.students].filter((st) => st.id !== ours.id).sort((a, b) => candPower(b) - candPower(a))[0];
-  s.election = { turn: ELECTION_TURN, candidate: ours.id, rival: rival.id, campaign: {}, done: false, result: null };
+  s.election = { turn: et, candidate: ours.id, rival: rival.id, campaign: {}, done: false, result: null };
   return s.election;
 }
 
-export const electionOpen = (s) => !!s.election && !s.election.done && s.turn <= ELECTION_TURN;
+export const electionOpen = (s) => !!s.election && !s.election.done && s.turn <= s.election.turn;
 
 const fail = (msg) => ({ ok: false, msg });
 const done = (msg) => { checkTitles(); save(); return { ok: true, msg }; };
@@ -50,7 +54,7 @@ export function campaign(key) {
   const s = getState();
   const e = ensureElection(s);
   if (!electionOpen(s)) return fail('선거 운동 기간이 아닙니다.');
-  if (s.turn < ELECTION_TURN - 1) return fail('선거 운동은 입학식 주부터 할 수 있습니다.');
+  if (s.turn < e.turn - 1) return fail('선거 운동은 입학식 주부터 할 수 있습니다.');
   if (!CAMPAIGN[key]) return fail('없는 선거 운동입니다.');
   if ((e.campaign[key] ?? 0) >= 2) return fail('같은 선거 운동은 두 번까지입니다.');
   if (s.ap < CAMPAIGN_AP) return fail(`AP가 부족합니다 (필요 ${CAMPAIGN_AP}).`);
@@ -85,7 +89,7 @@ export const candidatePower = candPower;
 // 주말 정산 (3월 2주): 개표
 export function resolveElection(s, rng) {
   const e = s.election;
-  if (!e || e.done || s.turn !== ELECTION_TURN) return;
+  if (!e || e.done || s.turn !== e.turn) return;
   e.done = true;
   let ours = 1, rival = 1;
   for (const st of s.students) {

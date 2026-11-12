@@ -5,7 +5,9 @@ import { classById, rosterOf, transfer, placeById, playerClasses } from './schoo
 import { threat } from './ai.js';
 import { postsOwned } from './politics.js';
 import { FACTIONS, AI_FACTIONS, HOMEROOM_ID, classLabel } from '../content/factions.js';
-import { FAME_STEPS } from '../content/stats.js';
+import { FAME_STEPS, STATS } from '../content/stats.js';
+
+const STAT_IDX_AFF = STATS.indexOf('친화력');
 
 export const OPS_AP = 2;
 export const ALLY_WEEKS = 8;
@@ -44,7 +46,12 @@ export function studentRecruitChance(s, cls, st, scholarship = 0) {
     + Math.min(SCHOLARSHIP_MAX, scholarship) / 100, 0.05, 0.9);
 }
 
-export const recruitsOf = (s, classId) => s.school.recruits[classId] ?? [];
+// 그 반의 우리 편 학생: 저장된 명단이 있으면 우리 계파 학생, 아니면 포섭 기록
+export const recruitsOf = (s, classId) => {
+  const stored = s.school.rosters?.[classId];
+  if (stored) return stored.filter((c) => c.f === 'player').map((c) => ({ id: c.id, name: c.n, aff: c.s[STAT_IDX_AFF] }));
+  return s.school.recruits[classId] ?? [];
+};
 
 export function opsBlock(s, cls) {
   if (!cls || cls.id === HOMEROOM_ID) return '우리 담임반입니다.';
@@ -71,7 +78,9 @@ export function recruitStudent(classId, studentId, scholarship = 0) {
   const owner = cls.owner;
   const rng = nextRng();
   if (rng.next() < p) {
-    (s.school.recruits[classId] ??= []).push({ id: st.id, name: st.name, aff: st.stats['친화력'], turn: s.turn });
+    const stored = s.school.rosters?.[classId]?.find((c) => c.id === st.id);
+    if (stored) stored.f = 'player';
+    else (s.school.recruits[classId] ??= []).push({ id: st.id, name: st.name, aff: st.stats['친화력'], turn: s.turn });
     const gain = 2 + st.stats['친화력'] / 4;
     transfer(cls, owner, 'player', gain);
     if (AI_FACTIONS.includes(owner)) s.school.rel[owner] = clamp((s.school.rel[owner] ?? 0) - 5, -100, 100);
@@ -190,8 +199,11 @@ export const nextIncomeTurn = (turn) => Math.floor((turn - 1) / 24) * 24 + 25;
 export function intrigueWeekly(s, rng) {
   const sc = s.school;
   // 포섭한 학생들의 영향력: 1명당 (친화력 ÷ 20) × 0.5%p (8.2 일상 영향력)
-  for (const [classId, list] of Object.entries(sc.recruits)) {
+  const classIds = new Set([...Object.keys(sc.recruits), ...Object.keys(sc.rosters ?? {})]);
+  for (const classId of classIds) {
+    if (classId === HOMEROOM_ID) continue;
     const cls = classById(s, classId);
+    const list = recruitsOf(s, classId);
     if (!cls || !list.length) continue;
     transfer(cls, 'others', 'player', list.reduce((a, r) => a + (r.aff / 20) * 0.5, 0));
   }

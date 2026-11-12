@@ -1,7 +1,7 @@
 // 반장 선거 화면 (3월 2주): 후보 정하기, 선거 운동, 예상 득표
 import { getState } from './game/state.js';
 import { classById } from './game/school.js';
-import { ensureElection, electionOpen, setCandidate, campaign, expectedVotes, candidatePower, CAMPAIGN, CAMPAIGN_AP, ELECTION_TURN } from './game/election.js';
+import { ensureElection, electionOpen, setCandidate, campaign, expectedVotes, candidatePower, CAMPAIGN, CAMPAIGN_AP } from './game/election.js';
 import { HOMEROOM_ID } from './content/factions.js';
 import { notify } from './chrome.js';
 import { esc, moralePill } from './ui.js';
@@ -27,7 +27,7 @@ export function renderElection(app) {
 
   app.innerHTML = `
     <div class="bhead"><div><span class="badge">${esc(s.weekLabel)}</span><h1>반장 선거</h1></div>
-      <p class="note">1학년 4반 학급 임원 선거. ${s.turn < ELECTION_TURN ? '다음 주' : '이번 주'} 주말에 개표합니다. 반장을 얻으면 담임반 지지도 +10%p, 이후 매주 +1%p.</p></div>
+      <p class="note">1학년 4반 학급 임원 선거. ${s.turn < e.turn ? '다음 주' : '이번 주'} 주말에 개표합니다. 반장을 얻으면 담임반 지지도 +10%p, 이후 매주 +1%p.</p></div>
 
     ${e.done ? `<section class="panel result ${e.result.win ? 'good' : 'bad'}"><h2 class="result-head">${e.result.win ? '당선' : '낙선'} ${e.result.ours}:${e.result.rival}</h2></section>` : ''}
 

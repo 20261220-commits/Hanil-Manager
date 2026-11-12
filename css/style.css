@@ -503,3 +503,4 @@ body[data-mode="menu"] .sidenav { display: none; }
 .cands .vs { align-self: center; font-family: var(--display); font-size: 22px; color: var(--muted); }
 @media (max-width: 640px) { .cands { grid-template-columns: 1fr; } .cands .vs { justify-self: center; } }
 .meter.wide { width: 100%; height: 12px; border-radius: 6px; }
+.table-wrap.tall { max-height: 440px; overflow: auto; }

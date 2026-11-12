@@ -4,6 +4,7 @@ import { endWeek } from './game/turn.js';
 import { deliverPersonaEvent } from './game/persona.js';
 import { electionOpen } from './game/election.js';
 import { ensureExam, isExamWeek } from './game/exam.js';
+import { yearTurn } from './game/calendar.js';
 
 let toastTimer = null;
 
@@ -50,6 +51,8 @@ export function renderGamebar() {
   if (el) el.hidden = !electionOpen(s);
   const ex = document.querySelector('.sidenav a[data-section="exam"]');
   if (ex) ex.classList.toggle('hot', isExamWeek(s, ensureExam(s)));
+  const mtNav = document.getElementById('nav-meeting');
+  if (mtNav) { mtNav.hidden = yearTurn(s.turn) < 41; mtNav.classList.toggle('hot', yearTurn(s.turn) === 48); }
   const n = unreadCount();
   const count = document.getElementById('inbox-count');
   count.textContent = n;
