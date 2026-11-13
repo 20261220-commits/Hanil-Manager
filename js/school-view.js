@@ -1,6 +1,7 @@
 // 교내 판도: 반 24개의 주인, 담임, 지지도와 대결 신청
 import { getState } from './game/state.js';
-import { playerClasses, semesterGoal, leader, placeInfo } from './game/school.js';
+import { playerClasses, leader, placeInfo } from './game/school.js';
+import { goalProgress, conquestProgress } from './game/campaign.js';
 import { challengeBlock, target, DUEL_AP } from './game/duel.js';
 import { threat } from './game/ai.js';
 import { PLACE_KIND, HOW_TO_TAKE } from './content/places.js';
@@ -18,7 +19,8 @@ export function supportBar(sup) {
 export function renderSchool(app) {
   const s = getState();
   const sc = s.school;
-  const goal = semesterGoal(s);
+  const goal = goalProgress(s);
+  const cq = conquestProgress(s);
   const owned = playerClasses(s).length;
   const counts = Object.fromEntries(FACTION_KEYS.map((k) => [k, sc.classes.filter((c) => c.owner === k).length]));
   const placeCounts = Object.fromEntries(FACTION_KEYS.map((k) => [k, sc.places.filter((p) => p.owner === k && placeInfo(p.id).kind !== 'base').length]));
@@ -65,8 +67,8 @@ export function renderSchool(app) {
 
     <div class="tiles">
       <div class="tile-stat"><span class="lbl">점령한 반</span><b>${owned} / ${sc.classes.length}</b></div>
-      <div class="tile-stat"><span class="lbl">담임반 지지도 (목표 70%)</span><b class="${goal.home >= 70 ? 'ok' : ''}">${Math.round(goal.home)}%</b></div>
-      <div class="tile-stat"><span class="lbl">첫 학기 목표</span><b>${goal.ok ? '달성' : `${goal.home >= 70 ? '✓' : '✗'} 지지도 · ${goal.owned >= 1 ? '✓' : '✗'} 반 1개 점령`}</b></div>
+      <div class="tile-stat"><span class="lbl">1막 진행 (교장 추대까지)</span><b>반 ${cq.classes}/${cq.classTotal} · 장소 ${cq.places}/${cq.placeTotal}</b></div>
+      <div class="tile-stat"><span class="lbl">학기 목표: ${esc(goal.text)}</span><b class="${goal.ok ? 'ok' : ''}">${goal.ok ? '달성' : esc(goal.now)}</b></div>
       <div class="tile-stat"><span class="lbl">이번 주 날씨</span><b>${sc.weather === '비' ? '비 (야외 종목 → 농구)' : '맑음'}</b></div>
       <div class="tile-stat"><span class="lbl">AI 계파의 경계 (우리 점령 ${Math.round(th.ratio * 100)}%)</span><b class="${th.tier ? 'warn-text' : ''}">${th.label}</b></div>
     </div>

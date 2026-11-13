@@ -38,6 +38,8 @@
   - 인플루언서: 방송실 점령이나 방송부 지도로 해금. 콘텐츠 제작(콘셉트 5종), 팔로워 단계별 영향력, 바이럴, 논란 폭발, 해명 영상
   - 괴담 (히든): 기행 15 이상 학생이 이상한 일을 겪으면 해금. 7대 불가사의 조사, 선택지 퍼즐, 광기와 실종, 해결 보상(영구), 13번째 교실 진엔딩
   - 루트 간 관계: 싸움 영상(패도+인플루언서), 폭로 콘텐츠(내부고발자+인플루언서), 교무회의 폭로로 부장 자리 차지(정도+내부고발자), 괴담 콘텐츠
+- 학기 목표 (14장): 학기 초에 교장이 목표를 정함 (1학기는 담임반 70% + 반 1개, 이후 반 추가 장악·지지도·기말 순위·장소 확보 중 하나). 학기 말 평가로 달성 +15(다음 학기 포상 예산 20만원), 실패 -20
+- 1막 종료와 결과 화면: 반 24개와 야외 구역·특별실·핵심실을 모두 점령하면 "교장 추대"(교장실 자동) → 엔딩(루트 숙련도 상위 2개) 화면, 계속 플레이 가능. 교장 신임이 0이 되면 "전근 발령" 게임 오버
 - 공작 (교내 판도의 반마다 "공작"): 학생 포섭(2 AP, 실제 명단에서 한 명 골라 우리 편으로. 포섭 장학금 10만원당 +10%p), 소문 퍼뜨리기(2 AP, 언어력·창의성, 들키면 신임 -10). 교무실에서 동맹 협상(2 AP, 8주 동안 공격 안 함·교무회의에서 우리 편, 배신 판정 있음), AI 계파의 동맹 제안
 - 학기 예산 수입 (룰북 3.6): 학기 초(8월 말)에 담임반 30 + 점령한 반 10씩 + 부장 자리 20씩 + 동아리실 15 + 지난 학기 목표 달성 포상 20
 - 화면: 왼쪽 사이드 메뉴 (캠퍼스·담임반·교내 판도·교무실·받은 편지함·행동·훈련·프로필·저장하고 메뉴로), 새 게임과 이어서 플레이는 캠퍼스에서 시작
@@ -62,7 +64,7 @@ python3 -m http.server 8000
 | --- | --- |
 | `index.html` | 진입점 |
 | `css/style.css` | 화면 스타일 (라이트·다크 테마) |
-| `js/main.js` | 화면 전환 (게임 밖: `#title`, `#new`, `#saves`, `#settings` / 게임 안: `#campus`, `#b-<건물 id>`, `#class`, `#s-<학생 id>`, `#school`, `#duel-<반 id>`, `#office`, `#ops-<반 id>`, `#exam`, `#election`, `#meeting`, `#routes`, `#inbox`, `#plan`, `#profile`) |
+| `js/main.js` | 화면 전환 (게임 밖: `#title`, `#new`, `#saves`, `#settings` / 게임 안: `#campus`, `#b-<건물 id>`, `#class`, `#s-<학생 id>`, `#school`, `#duel-<반 id>`, `#office`, `#ops-<반 id>`, `#exam`, `#election`, `#meeting`, `#routes`, `#news`, `#ending`, `#inbox`, `#plan`, `#profile`) |
 | `js/menu.js` | 로딩, 대기 화면, 새로 플레이, 세이브 파일, 설정 화면 |
 | `js/profile.js` | 교사 프로필과 칭호 선택 |
 | `js/settings.js` | 설정 저장과 적용 |
@@ -77,7 +79,7 @@ python3 -m http.server 8000
 | `js/ai-client.js`, `js/config.js` | AI 중계 서버 연결 (기본 서버 주소는 `config.js`) |
 | `worker/` | AI 중계 서버 (Cloudflare Worker) |
 | `js/ui.js` | 화면 공통 조각 (별점, 사기, 욕구 막대 등) |
-| `js/game/` | 게임 로직: 난수(`rng.js`), 학생 생성(`students.js`), 저장(`state.js`), 턴 진행(`turn.js`), 달력(`calendar.js`), 반·지지도(`school.js`), 대결 엔진(`match.js`), 대결 진행(`duel.js`), AI 계파(`ai.js`), 교사 프로필 특성(`persona.js`), 교무 정치(`politics.js`), 공작·동맹·학기 예산(`intrigue.js`), 시험(`exam.js`), 반장 선거(`election.js`), 반 편성 회의(`meeting.js`), 특수 루트 공통·인플루언서·괴담(`routes.js`), 패도(`fight.js`), 내부고발자(`whistle.js`) |
+| `js/game/` | 게임 로직: 난수(`rng.js`), 학생 생성(`students.js`), 저장(`state.js`), 턴 진행(`turn.js`), 달력(`calendar.js`), 반·지지도(`school.js`), 대결 엔진(`match.js`), 대결 진행(`duel.js`), AI 계파(`ai.js`), 교사 프로필 특성(`persona.js`), 교무 정치(`politics.js`), 공작·동맹·학기 예산(`intrigue.js`), 시험(`exam.js`), 반장 선거(`election.js`), 반 편성 회의(`meeting.js`), 특수 루트 공통·인플루언서·괴담(`routes.js`), 패도(`fight.js`), 내부고발자(`whistle.js`), 학기 목표·1막 종료·게임 오버(`campaign.js`) |
 | `js/school-view.js` | 교내 판도 화면 |
 | `js/office-view.js` | 교무실 화면 |
 | `js/ops-view.js` | 공작 화면 (반마다) |
@@ -85,6 +87,8 @@ python3 -m http.server 8000
 | `js/election-view.js` | 반장 선거 화면 |
 | `js/meeting-view.js` | 반 편성 화면 (사전 협상, 회의) |
 | `js/routes-view.js` | 특수 루트 화면 |
+| `js/news-view.js` | 소식 화면 (기본 화면) |
+| `js/ending-view.js` | 결과 화면 (교장 추대·엔딩, 전근 발령) |
 | `js/duel-view.js` | 대결 준비·경기·결과 화면 |
 | `js/content/` | 룰북 데이터: 스탯, 성격 23종, 성향 16종, 이름, 교과목(`subjects.js`), 칭호(`titles.js`), 계파(`factions.js`), 반 밖의 땅(`places.js`), 교사 특성 효과·키워드 규칙(`persona.js`), 교무회의 안건·규칙·부장 자리(`council.js`), 특수 루트(`routes.js`) |
 | `data/campus.json` | 건물 목록과 지도 위 영역 좌표 |

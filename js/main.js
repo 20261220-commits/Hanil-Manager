@@ -18,6 +18,8 @@ import { renderElection } from './election-view.js';
 import { renderMeeting } from './meeting-view.js';
 import { renderRoutes } from './routes-view.js';
 import { renderNews } from './news-view.js';
+import { renderEnding } from './ending-view.js';
+import { getState } from './game/state.js';
 import { renderLoading, renderTitle, renderNewGame, renderSaves, renderSettings, resetDraft } from './menu.js';
 import { renderGamebar, toast } from './chrome.js';
 import { isPlaying, quitToTitle, migrateOldSave } from './game/state.js';
@@ -43,6 +45,15 @@ async function route({ keepScroll = false } = {}) {
       return;
     }
 
+    // 게임이 끝난 세이브는 결과 화면만 보여 준다
+    if (getState().gameOver && hash !== 'ending') { location.hash = 'ending'; return; }
+    if (hash === 'ending') {
+      document.body.dataset.mode = 'menu';
+      crumbsEl.hidden = true;
+      renderEnding(app);
+      if (!keepScroll) window.scrollTo(0, 0);
+      return;
+    }
     // 게임 안 화면
     document.body.dataset.mode = 'game';
     let crumbs;

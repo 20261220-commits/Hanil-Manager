@@ -5,7 +5,8 @@ import { weekLabel, eventOf, nearExam, isHomecoming, yearTurn } from './calendar
 import { STAT_GROUPS, STAT_LABEL, MORALE } from '../content/stats.js';
 import { PERSONALITIES } from '../content/personality.js';
 import { clamp } from './rng.js';
-import { weeklySchool, semesterGoal } from './school.js';
+import { weeklySchool } from './school.js';
+import { evaluateSemester, ensureGoal, checkEnd } from './campaign.js';
 import { aiWeek } from './ai.js';
 import { mod, personaWeekly, resolvePersonaChoice } from './persona.js';
 import { councilWeekly, voteOnAiAgenda, ruleOn } from './politics.js';
@@ -248,6 +249,7 @@ export const needName = (k) => NEED_NAME[k];
 
 export function canEndWeek() {
   const s = getState();
+  if (s.gameOver) return '게임이 끝났습니다.';
   if (s.duel && !s.duel.m.done) return '진행 중인 대결이 있습니다. 대결을 끝까지 치러 주세요.';
   const pend = pendingDecisions();
   return pend.length ? `처리하지 않은 일이 ${pend.length}건 있습니다. 받은 편지함에서 먼저 결정해 주세요.` : null;
@@ -403,13 +405,7 @@ export function endWeek() {
   intrigueWeekly(s, rng); // 포섭한 학생 영향력, 동맹 배신·만료, AI 동맹 제안
   routesWeekly(s, rng); // 특수 루트: 패도 해금·열기·공포, 고발 사건, 논란, 괴담·광기 (12장)
   for (const msg of weeklySchool(s, rng)) addMessage(msg);
-  if (yearTurn(s.turn) === 20) {
-    const g = semesterGoal(s);
-    s.trust = clamp(s.trust + (g.ok ? 10 : -10), 0, 100);
-    s.school.goalOk = g.ok; // 다음 학기 예산에 목표 달성 포상 +20
-    addMessage({ kind: g.ok ? 'info' : 'warn', title: `1학기 평가: ${g.ok ? '목표 달성' : '목표 미달'}`,
-      body: `담임반 지지도 ${Math.round(g.home)}% (목표 70%), 추가로 점령한 반 ${g.owned}개 (목표 1개). 교장 신임 ${g.ok ? '+10' : '-10'}.` });
-  }
+  evaluateSemester(s); // 학기 말 평가: 목표 달성 +15, 실패 -20 (14장)
 
   // 10. 교사 피로와 다음 주 준비
   personaWeekly(s, rng); // 교사 프로필: 매주 예산, 프로필 이벤트 예약
@@ -419,6 +415,7 @@ export function endWeek() {
   s.weekLabel = weekLabel(s.turn);
   incomeIfNewSemester(s); // 학기 초 예산 수입 (룰북 3.6)
   ensureElection(s); // 새 학년이면 반장 선거 준비
+  checkEnd(s); // 캠퍼스 전부 점령이면 교장 추대, 신임 0이면 전근 발령
   s.freeObservations = 0;
   s.usedThisWeek = {};
   s.overtime = 0;
@@ -428,6 +425,7 @@ export function endWeek() {
   if (s.warden.mood === '나쁨') addMessage({ kind: 'info', title: '사감 선생님 기분이 안 좋습니다', body: '주식이 떨어졌다는 소문입니다. 이번 주는 일탈이 걸리기 쉽습니다.' });
   const ev = eventOf(s.turn);
   if (ev) addMessage({ kind: 'info', title: `이번 주 일정: ${ev}`, body: eventText(ev) });
+  ensureGoal(s); // 학기 초면 새 학기 목표
   markTrust(s);
   return done(`새로운 주가 시작됐습니다: ${s.weekLabel}`);
 }

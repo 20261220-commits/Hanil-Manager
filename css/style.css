@@ -546,3 +546,16 @@ body[data-mode="menu"] .sidenav { display: none; }
 .news-nav { background: var(--soft); }
 @media (max-width: 900px) { .news-body { grid-template-columns: 1fr; } .news-side { grid-template-columns: 1fr; } .news-portrait { height: 100px; } }
 @media (max-width: 900px) { .news-bar { position: static; background: none; } .news-screen { min-height: 0; } }
+
+/* 결과 화면 */
+.end-card { text-align: center; }
+.end-card h2 { text-align: left; }
+.end-kicker { margin: 0; color: var(--muted); font-size: 13px; letter-spacing: 1px; }
+.end-title { font-size: clamp(40px, 8vw, 64px); }
+.end-ending { display: grid; gap: 4px; padding: 16px; border-radius: 12px; background: var(--good-bg); }
+.end-ending b { font-family: var(--display); font-weight: 400; font-size: 28px; color: var(--good); }
+.end-ending p { margin: 0; }
+.end-true { color: var(--legend); font-weight: 600; }
+.end-kv { text-align: left; grid-template-columns: 1fr auto 1fr auto; gap: 6px 16px; }
+@media (max-width: 640px) { .end-kv { grid-template-columns: 1fr auto; } }
+.news-kv dd.ok { color: var(--good); }

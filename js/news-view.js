@@ -5,6 +5,7 @@ import { resolveDecision } from './game/turn.js';
 import { weekLabel } from './game/calendar.js';
 import { classById } from './game/school.js';
 import { postsOwned } from './game/politics.js';
+import { goalProgress } from './game/campaign.js';
 import { notify } from './chrome.js';
 import { esc, moralePill } from './ui.js';
 import { HOMEROOM_ID } from './content/factions.js';
@@ -87,6 +88,7 @@ function teacherCard(s) {
       <dt>담임반</dt><dd>${esc(s.className)}</dd>
       <dt>담임반 지지도</dt><dd>${Math.round(home.support.player)}%</dd>
       <dt>교장 신임</dt><dd>${s.trust}</dd>
+      <dt>학기 목표</dt><dd class="${goalProgress(s).ok ? 'ok' : ''}">${esc(goalProgress(s).now)}</dd>
       <dt>점령한 반</dt><dd>${owned} / ${s.school.classes.length}</dd>
       <dt>부장 자리</dt><dd>${postsOwned(s).length}</dd>
     </dl>

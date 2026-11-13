@@ -238,6 +238,7 @@ function finishExam(s, e, rng) {
   }
   if (home.rank === 1) count('examFirst');
   R.homeRank = home.rank;
+  (s.examHistory ??= []).push({ turn: e.turn, rank: home.rank }); // 학기 목표(기말 순위) 판정용
   R.homeDelta = homeDelta;
   addMessage({
     kind: home.rank <= 3 ? 'info' : 'report',
