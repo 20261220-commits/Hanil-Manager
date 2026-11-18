@@ -1,4 +1,5 @@
 // 결과 화면: 1막 종료(교장 추대)와 엔딩, 또는 게임 오버(전근 발령)
+import { startAct2 } from './game/nation.js';
 import { getState, save } from './game/state.js';
 import { endingOf, masteryOf } from './game/routes.js';
 import { conquestProgress } from './game/campaign.js';
@@ -39,6 +40,16 @@ export function renderEnding(app) {
       <h2>루트 숙련도</h2>${bars(s, g.routes)}
       <div class="menu-list"><a class="menu-btn primary" href="#new"><b>새로 플레이</b><span>처음부터 다시</span></a>
         <a class="menu-btn" href="#saves"><b>세이브 파일</b><span>다른 칸 불러오기</span></a></div>`;
+  } else if (s.act2?.won && !s.act2.wonSeen) {
+    const w = s.nation.won;
+    body = `
+      <p class="end-kicker">2막 완료 · ${esc(s.weekLabel)}</p>
+      <div class="logo end-title">전국 정복</div>
+      <p class="tagline">6개 권역을 모두 장악했습니다. 공주의 작은 기숙학교에서 시작한 ${esc(s.profile.name)} 교장의 이름이 전국 모든 교무실에 오르내립니다.</p>
+      <dl class="kv end-kv"><dt>분교</dt><dd>${w.branches}곳</dd><dt>2막에 걸린 시간</dt><dd>${w.turn - s.act2.start}주</dd>
+        <dt>1막 엔딩</dt><dd>${esc(s.act1.ending.text.startsWith('아직') ? '이름 없는 교장' : s.act1.ending.text.split(' (')[0])}</dd></dl>
+      <div class="menu-list"><button type="button" class="menu-btn primary" id="go-on2"><b>계속 플레이</b><span>남은 학교도 정복하기</span></button>
+        <a class="menu-btn" href="#title"><b>저장하고 대기 화면으로</b><span>메뉴로 나가기</span></a></div>`;
   } else if (s.act1) {
     const a = s.act1;
     // 숙련도 20 이상인 루트 없이 끝내면 "이름 없는 교장"
@@ -51,8 +62,9 @@ export function renderEnding(app) {
         ${a.ending.trueEnd ? '<p class="end-true">그리고 13번째 교실에서, 학교의 숨겨진 진실이 드러났습니다. (진엔딩)</p>' : ''}</section>
       ${statsTable(a, cq)}
       <h2>루트 숙련도</h2>${bars(s, a.routes)}
-      <p class="note">한일고가 본교가 됩니다. 2막(전국 정복)은 다음 업데이트에서 이어집니다. 계속 플레이하면 지금 학교에서 이어서 할 수 있습니다.</p>
-      <div class="menu-list"><button type="button" class="menu-btn primary" id="go-on"><b>계속 플레이</b><span>교장이 된 학교에서 이어서</span></button>
+      <p class="note">한일고가 본교가 됩니다. 이제 충청권에서 출발해 전국의 학교를 분교로 만드는 2막이 열립니다.</p>
+      <div class="menu-list">${s.act2 ? `<a class="menu-btn primary" href="#nation"><b>전국 지도로</b><span>2막 진행 중</span></a>`
+        : `<button type="button" class="menu-btn primary" id="act2"><b>2막 시작: 전국 정복</b><span>한일고를 본교로 전국에 도전</span></button>`}
         <a class="menu-btn" href="#title"><b>저장하고 대기 화면으로</b><span>메뉴로 나가기</span></a></div>`;
   } else {
     const e = endingOf(s);
@@ -65,6 +77,8 @@ export function renderEnding(app) {
       <div class="menu-list"><a class="menu-btn primary" href="#news"><b>돌아가기</b><span>게임으로</span></a></div>`;
   }
   app.innerHTML = `<div class="menu-screen"><div class="menu-card wide end-card">${body}</div></div>`;
+  app.querySelector('#act2')?.addEventListener('click', () => { const r = startAct2(); if (r.ok) location.hash = 'nation'; });
+  app.querySelector('#go-on2')?.addEventListener('click', () => { s.act2.wonSeen = true; save(); location.hash = 'nation'; });
   app.querySelector('#go-on')?.addEventListener('click', () => { s.act1.seen = true; save(); location.hash = 'news'; });
   return [];
 }

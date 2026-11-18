@@ -39,7 +39,7 @@ export function renderGamebar() {
     const r = endWeek();
     if (!r.ok) { toast(r.msg, true); const to = s.duel && !s.duel.m.done ? `duel-${s.duel.classId}` : 'news'; if (location.hash === `#${to}`) window.dispatchEvent(new CustomEvent('game:news')); else location.hash = to; return; }
     toast(r.msg);
-    if (s.gameOver || (s.act1 && !s.act1.seen)) { location.hash = 'ending'; return; }
+    if (s.gameOver || (s.act1 && !s.act1.seen) || (s.act2?.won && !s.act2.wonSeen)) { location.hash = 'ending'; return; }
     deliverPersonaEvent(); // 프로필 이벤트가 예약됐으면 만들어 편지함에 넣는다 (AI는 몇 초 걸릴 수 있음)
     // 새 주가 되면 소식 화면에서 읽지 않은 소식부터 본다
     if (location.hash === '#news') window.dispatchEvent(new CustomEvent('game:news'));
@@ -53,6 +53,8 @@ export function renderGamebar() {
   if (el) el.hidden = !electionOpen(s);
   const ex = document.querySelector('.sidenav a[data-section="exam"]');
   if (ex) ex.classList.toggle('hot', isExamWeek(s, ensureExam(s)));
+  const naNav = document.getElementById('nav-nation');
+  if (naNav) naNav.hidden = !s.act2;
   const mtNav = document.getElementById('nav-meeting');
   if (mtNav) { mtNav.hidden = yearTurn(s.turn) < 41; mtNav.classList.toggle('hot', yearTurn(s.turn) === 48); }
   const n = unreadCount();

@@ -17,6 +17,7 @@ import { renderExam } from './exam-view.js';
 import { renderElection } from './election-view.js';
 import { renderMeeting } from './meeting-view.js';
 import { renderRoutes } from './routes-view.js';
+import { renderNation } from './nation-view.js';
 import { renderNews } from './news-view.js';
 import { renderEnding } from './ending-view.js';
 import { getState } from './game/state.js';
@@ -67,6 +68,7 @@ async function route({ keepScroll = false } = {}) {
     else if (hash === 'election') crumbs = renderElection(app);
     else if (hash === 'meeting') crumbs = renderMeeting(app);
     else if (hash === 'routes') crumbs = renderRoutes(app);
+    else if (hash === 'nation') crumbs = renderNation(app);
     else if (hash.startsWith('ops-')) crumbs = renderOps(app, hash.slice(4));
     else if (hash === 'news') crumbs = renderNews(app, { fresh: !keepScroll });
     else if (hash === 'inbox') crumbs = renderInbox(app);
@@ -78,7 +80,7 @@ async function route({ keepScroll = false } = {}) {
       (i ? '<span aria-hidden="true">›</span>' : '') +
       (c.href ? `<a href="${c.href}">${c.label}</a>` : `<span aria-current="page">${c.label}</span>`)).join('');
     crumbsEl.hidden = crumbs.length < 2;
-    const section = hash === 'class' || hash.startsWith('s-') ? 'class' : hash === 'school' || hash.startsWith('duel-') || hash.startsWith('ops-') ? 'school' : hash === 'news' ? 'inbox' : ['inbox', 'plan', 'profile', 'office', 'exam', 'election', 'meeting', 'routes'].includes(hash) ? hash : 'campus';
+    const section = hash === 'class' || hash.startsWith('s-') ? 'class' : /^duel-n\d+$/.test(hash) || hash === 'nation' ? 'nation' : hash === 'school' || hash.startsWith('duel-') || hash.startsWith('ops-') ? 'school' : hash === 'news' ? 'inbox' : ['inbox', 'plan', 'profile', 'office', 'exam', 'election', 'meeting', 'routes'].includes(hash) ? hash : 'campus';
     document.querySelectorAll('.mainnav a').forEach((a) => a.setAttribute('aria-current', String(a.dataset.section === section)));
     renderGamebar();
     if (!keepScroll) window.scrollTo(0, 0);

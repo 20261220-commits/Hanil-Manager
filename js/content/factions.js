@@ -7,6 +7,7 @@ export const FACTIONS = {
   innov: { name: '혁신파 교사', short: '혁신', refuses: true, favorite: '행사 기획' },
   none: { name: '무소속', short: '무소속', refuses: false },
   neutral: { name: '중립 (교장)', short: '중립', refuses: false },
+  school: { name: '상대 학교', short: '상대 학교', refuses: false }, // 2막 정복전 상대
 };
 // 지지도를 가지는 세력 (중립은 교장실·행정실 표시용)
 export const FACTION_KEYS = ['player', 'elder', 'exam', 'pe', 'innov', 'none'];

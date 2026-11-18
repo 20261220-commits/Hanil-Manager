@@ -5,6 +5,8 @@ import { makeRng, clamp } from './rng.js';
 import { isVacation } from './calendar.js';
 import { classById, rosterOf, transfer, placeById, placeInfo, championClass } from './school.js';
 import { famFor, famKey } from './match.js';
+import { schoolById, schoolRoster, lineBonus, awayDistance, applySchoolResult, HOME_SUPPORT } from './nation.js';
+import { TIERS } from '../content/korea.js';
 import { SPORTS, JUDGES, AUDIENCES, createMatch, playSegment, preTalk, aiTimeout, substitute, isUnlocked, fit, autoLineup, bestTactics, estimateWin } from './match.js';
 import { FACTIONS, HOMEROOM_ID, classLabel } from '../content/factions.js';
 import { makeClassRoster } from './students.js';
@@ -38,6 +40,15 @@ export function scout(targetId) {
 
 // 대결 대상 정보
 export function target(s, id) {
+  // 2막: 다른 학교 (전국 정복전)
+  if (/^n\d+$/.test(id) && s.nation) {
+    const sc = schoolById(id);
+    if (!sc) return null;
+    const st = s.nation.schools[id];
+    const seed = [...id].reduce((a, c) => a * 31 + c.charCodeAt(0), 13) % 1e9 + s.seed;
+    return { id, kind: 'school', label: sc.name, owner: st.owner === 'player' ? 'player' : 'school', school: sc, state: st, seed: seed + s.turn,
+      teacher: null, lead: 10 + TIERS[sc.tier].bonus / 2, team: sc.name, roster: () => schoolRoster(s, sc) };
+  }
   const cls = classById(s, id);
   if (cls) {
     return { id, kind: 'class', label: classLabel(id), owner: cls.owner, cls, seed: cls.seed,
@@ -57,7 +68,8 @@ export function target(s, id) {
 
 export function challengeBlock(s, t) {
   if (t.kind === 'class' && t.id === HOMEROOM_ID) return '우리 담임반입니다.';
-  if (t.owner === 'player') return t.kind === 'class' ? '이미 우리가 점령한 반입니다.' : '이미 우리 땅입니다.';
+  if (t.owner === 'player') return t.kind === 'class' ? '이미 우리가 점령한 반입니다.' : t.kind === 'school' ? '이미 우리 분교입니다.' : '이미 우리 땅입니다.';
+  if (t.kind === 'school' && !s.nation.declared[t.id]) return '먼저 전국 지도에서 정복전을 선언해 주세요.';
   if (t.kind === 'place' && t.placeKind !== 'outdoor') return '대결로는 얻을 수 없는 곳입니다.';
   if (s.school.preps?.[t.id]) return null; // 행사 준비 중: 준비 화면은 열 수 있다
   if (s.duel && !s.duel.m.done) return '진행 중인 대결을 먼저 끝내 주세요.';
@@ -81,13 +93,20 @@ export function homeSide(s, sport, attacker) {
 // 교사 보정 추가분: 체육 과목(반 대항전이 강한 대결) +0.05, 교사 프로필 특성의 대결 보정
 export const subjectBonus = (s) => (s.profile.subject === 'pe' ? 0.05 : 0) + mod(s, 'duel') / 100;
 
-export function playerSide(s, draft) {
-  return {
+export function playerSide(s, draft, t = null) {
+  const side = {
     key: 'player', name: s.className, faction: 'player',
     lead: teacherStat('지도력'), bonus: subjectBonus(s), home: false,
     players: s.students.filter((st) => !isOut(s, st)), lineup: draft?.lineup, tactics: draft?.tactics,
     badLuck: solved(s, 'skull') ? 0.8 : 1, // 괴담 "과학실 해골": 불운 -20%
   };
+  if (t?.kind === 'school') {
+    side.bonus += HOME_SUPPORT; // 본교 전체의 지원
+    // 원정: 4칸(약 100km)마다 출전 학생 컨디션 -5%로 시작 (11.0)
+    const pen = 0.05 * Math.floor(awayDistance(t.school) / 4);
+    if (pen) side.players = side.players.map((st) => ({ ...st, condition: Math.round(st.condition * (1 - pen)) }));
+  }
+  return side;
 }
 
 export function aiTactics(sport, rng) {
@@ -102,6 +121,7 @@ export function aiTactics(sport, rng) {
 export function oppSide(s, t, sport, rng) {
   return {
     key: t.id, name: t.team, faction: t.owner, lead: t.lead, home: true, players: t.roster(),
+    bonus: t.kind === 'school' ? lineBonus(t.school, sport) : 0, // 학교 계열 강점 (보스 1.5배)
     tactics: rng ? aiTactics(sport, rng) : undefined,
   };
 }
@@ -128,8 +148,8 @@ export function refusedSport(s, t, attackerRoster = s.students) {
 // 예상 승률. 교사 안목이 낮을수록 범위가 넓다.
 export function preview(s, t, sport) {
   const real = actualSport(s, sport);
-  const me = playerSide(s), op = oppSide(s, t, real);
-  if (homeSide(s, real, 'player') === 'attacker') { me.home = true; op.home = false; }
+  const me = playerSide(s, null, t), op = oppSide(s, t, real);
+  if (t.kind !== 'school' && homeSide(s, real, 'player') === 'attacker') { me.home = true; op.home = false; }
   const extra = { judge: judgeOf(s, t), audience: audienceOf(s, t) };
   if (real === 'event') { me.readiness = s.school.preps?.[t.id]?.readiness ?? 60; op.readiness = oppReadiness(t); }
   const est = estimateWinX(real, me, op, (k) => makeRng(t.seed + k * 101 + s.turn * 7), 60, extra);
@@ -142,7 +162,7 @@ export function preview(s, t, sport) {
 
 // t를 주고 상대 분석을 했으면, 토론은 상대 스타일과 심사위원을 보고 가장 유리한 스타일을 고른다
 export function autoSetup(s, sport, tactics, t = null) {
-  const base = { ...playerSide(s), tactics: { ...SPORTS[sport].defaults, ...tactics } };
+  const base = { ...playerSide(s, null, t), tactics: { ...SPORTS[sport].defaults, ...tactics } };
   const lineup = autoLineup(s.students.filter((st) => !isOut(s, st)), SPORTS[sport].positions(base.tactics));
   const combo = bestTactics(sport, { ...base, lineup }, (k) => makeRng(s.seed + k * 13 + s.turn), 24);
   if (sport === 'debate' && t && scouted(s, t.id)) {
@@ -225,7 +245,7 @@ export function prepWeekly(s, rng) {
     const t = target(s, id);
     delete s.school.preps[id];
     if (!t || t.owner === 'player') continue;
-    const m = createMatch('event', { ...playerSide(s, prep), readiness: prep.readiness }, { ...oppSide(s, t, 'event', rng), readiness: prep.oppReady }, rng, { audience: prep.audience });
+    const m = createMatch('event', { ...playerSide(s, prep, t), readiness: prep.readiness }, { ...oppSide(s, t, 'event', rng), readiness: prep.oppReady }, rng, { audience: prep.audience });
     while (!m.done) { if (m.seg > 0) { aiTimeout(m, 0, rng, clamp(teacherStat('지도력') * 0.04, 0, 1)); aiTimeout(m, 1, rng); } playSegment(m, rng); }
     applyResult(s, { classId: id, sport: 'event', asked: 'event', m, result: null, auto: true }, rng);
   }
@@ -243,8 +263,8 @@ export function beginDuel(targetId, sport, draft) {
   const rng = nextRng();
   s.ap -= DUEL_AP;
   s.school.challenged[targetId] = true;
-  const me = playerSide(s, draft), op = { ...oppSide(s, t, real, rng), tactics: oppTacticsOf(s, t, real) };
-  if (homeSide(s, real, 'player') === 'attacker') { me.home = true; op.home = false; }
+  const me = playerSide(s, draft, t), op = { ...oppSide(s, t, real, rng), tactics: oppTacticsOf(s, t, real) };
+  if (t.kind !== 'school' && homeSide(s, real, 'player') === 'attacker') { me.home = true; op.home = false; }
   const m = createMatch(real, me, op, rng, { judge: judgeOf(s, t) });
   if (draft.talk !== null && draft.talk !== undefined) preTalk(m, 0, draft.talk, teacherStat('동기부여'), rng);
   if (rng.next() < 0.7) preTalk(m, 1, rng.int(0, 2), 10, rng);
@@ -259,7 +279,7 @@ function beginEvent(s, t, prep) {
   if (s.duel && !s.duel.m.done) return fail('진행 중인 대결을 먼저 끝내 주세요.');
   const rng = nextRng();
   delete s.school.preps[t.id];
-  const m = createMatch('event', { ...playerSide(s, prep), readiness: prep.readiness }, { ...oppSide(s, t, 'event', rng), readiness: prep.oppReady }, rng, { audience: prep.audience });
+  const m = createMatch('event', { ...playerSide(s, prep, t), readiness: prep.readiness }, { ...oppSide(s, t, 'event', rng), readiness: prep.oppReady }, rng, { audience: prep.audience });
   if (prep.talk !== null && prep.talk !== undefined) preTalk(m, 0, prep.talk, teacherStat('동기부여'), rng);
   s.duel = { classId: t.id, sport: 'event', asked: 'event', m, result: null };
   return done(`${t.label}과(와)의 행사 기획 대결이 시작됩니다. 관객: ${prep.audience}.`);
@@ -305,6 +325,10 @@ export function duelSub(outId, inId) {
 // attacker, defender: 계파 키. 돌려주는 값: { moved, conquered, absorbed }
 export function settle(s, t, attacker, defender, winnerIsAttacker, grade, rng, politics) {
   let moved = 0, conquered = false, absorbed = false;
+  if (t.kind === 'school') {
+    const r = applySchoolResult(s, t.id, winnerIsAttacker, grade.key);
+    return { moved: 0, conquered: r.conquered, absorbed: false, hit: r.hit };
+  }
   if (t.kind === 'class') {
     const cls = t.cls;
     if (winnerIsAttacker === true) {
@@ -332,22 +356,23 @@ function applyResult(s, d, rng) {
   const g = m.grade;
   const owner = t.owner;
   const win = m.winner === 0 ? true : m.winner === 1 ? false : null;
-  const { moved, conquered, absorbed } = settle(s, t, 'player', owner, win, g, rng, teacherStat('정치력'));
+  const { moved, conquered, absorbed, hit: hitOf = 0 } = settle(s, t, 'player', owner, win, g, rng, teacherStat('정치력'));
   if (t.kind === 'class') {
     const rec = t.cls.record;
     if (win === true) rec.w++; else if (win === false) rec.l++; else rec.d++;
   }
   if (win === true) { count('duelWin'); fearToRespect(s, t.id, 10); } // 정도 대결 승리: 공포 10%p를 존경으로
-  if (conquered) count(t.kind === 'class' ? 'conquer' : 'conquerPlace');
+  if (conquered && t.kind !== 'school') count(t.kind === 'class' ? 'conquer' : 'conquerPlace');
   if (absorbed) count('absorbed');
 
   // 출전 학생: 컨디션, 사기, 소량 성장, MVP 명성
   const mvpName = applyToStudents(s, m, 0, rng);
 
-  d.result = { moved, conquered, absorbed, owner, kind: t.kind };
+  d.result = { moved, conquered, absorbed, owner, kind: t.kind, hit: hitOf, pride: t.state?.pride };
   const label = t.label;
   const res = m.winner === 0 ? g.label : m.winner === 1 ? (g.key === 'close' ? '석패' : '패배') : '무승부';
-  const supportLine = t.kind === 'place' ? (win === true ? '' : win === false ? `${label}은(는) 그대로 ${FACTIONS[owner].name} 땅입니다.` : '비겨서 아무것도 바뀌지 않았습니다.')
+  const supportLine = t.kind === 'school' ? (win === true ? `${label} 자존심 -${hitOf} (남은 자존심 ${t.state.pride})` : win === false ? `${label}의 자존심은 그대로입니다.` : '비겨서 아무것도 바뀌지 않았습니다.')
+    : t.kind === 'place' ? (win === true ? '' : win === false ? `${label}은(는) 그대로 ${FACTIONS[owner].name} 땅입니다.` : '비겨서 아무것도 바뀌지 않았습니다.')
     : m.winner === null ? '비겨서 지지도는 변하지 않았습니다.'
       : m.winner === 0 ? `${label} 우리 지지도 +${moved.toFixed(1)}%p (현재 ${Math.round(t.cls.support.player)}%).`
         : moved < 0 ? `${label} 우리 지지도 ${moved.toFixed(1)}%p (현재 ${Math.round(t.cls.support.player)}%).` : `${label}에는 원래 우리 지지도가 없어서 잃은 것은 없습니다.`;

@@ -6,6 +6,7 @@ import { target, challengeBlock, refusedSport, preview, autoSetup, beginDuel, ne
 import { JUDGE_LABEL, AUDIENCES, famFor, famKey, famLabel } from './game/match.js';
 import { weekLabel } from './game/calendar.js';
 import { FACTIONS } from './content/factions.js';
+import { REGIONS, TIERS, LINES, awayDistance, lineBonus } from './game/nation.js';
 import { PERSONALITIES, TALKS } from './content/personality.js';
 import { notify, toast } from './chrome.js';
 import { esc, moralePill } from './ui.js';
@@ -27,7 +28,7 @@ export function renderDuel(app, classId) {
   if (s.duel && s.duel.classId !== classId) { location.hash = `duel-${s.duel.classId}`; return [{ label: '교내 판도', href: '#school' }, { label: '대결' }]; }
   const cls = target(s, classId);
   if (!cls) { app.innerHTML = '<div class="panel empty"><h1>없는 대상입니다</h1><a class="btn" href="#school">교내 판도로</a></div>'; return [{ label: '교내 판도', href: '#school' }]; }
-  const crumbs = [{ label: '교내 판도', href: '#school' }, { label: `${cls.label} 대결` }];
+  const crumbs = cls.kind === 'school' ? [{ label: '전국', href: '#nation' }, { label: `${cls.label} 정복전` }] : [{ label: '교내 판도', href: '#school' }, { label: `${cls.label} 대결` }];
   if (s.duel) renderMatch(app, s, cls);
   else renderSetup(app, s, cls);
   return crumbs;
@@ -43,8 +44,9 @@ function renderSetup(app, s, cls) {
   const refused = refusedSport(s, cls);
   const head = `
     <div class="bhead"><div><span class="badge">${esc(s.weekLabel)}</span><h1>${esc(cls.label)}에 도전</h1></div>
-      <div class="duel-opp">${factionChip(cls.owner)} <span class="note">${cls.teacher ? `${cls.kind === 'place' ? `지키는 반 ${esc(cls.team)} · ` : ''}담임 ${esc(cls.teacher)} 선생님 · 지도력 ${cls.lead}` : `${esc(cls.team)}이 지킵니다`}</span></div></div>
-    ${cls.kind === 'class' ? `<section class="panel"><div class="row between"><h2>지금 지지도</h2><span class="note">우리 ${Math.round(cls.cls.support.player)}% · ${FACTIONS[cls.owner].short} ${Math.round(cls.cls.support[cls.owner])}%</span></div>
+      <div class="duel-opp">${factionChip(cls.owner)} <span class="note">${cls.kind === 'school' ? `${esc(cls.school.city)} · 교사진 지도력 ${cls.lead}` : cls.teacher ? `${cls.kind === 'place' ? `지키는 반 ${esc(cls.team)} · ` : ''}담임 ${esc(cls.teacher)} 선생님 · 지도력 ${cls.lead}` : `${esc(cls.team)}이 지킵니다`}</span></div></div>
+    ${cls.kind === 'school' ? schoolPanel(cls)
+    : cls.kind === 'class' ? `<section class="panel"><div class="row between"><h2>지금 지지도</h2><span class="note">우리 ${Math.round(cls.cls.support.player)}% · ${FACTIONS[cls.owner].short} ${Math.round(cls.cls.support[cls.owner])}%</span></div>
       ${supportBar(cls.cls.support)}
       <p class="note">이기면 압승 +20%p, 승리 +12%p, 신승 +5%p를 ${FACTIONS[cls.owner].name} 쪽에서 가져옵니다. 지면 이 반의 우리 지지도를 같은 만큼 잃습니다.
         이긴 뒤 우리 지지도가 50% 이상이면 이 반을 점령합니다. 상대는 홈이라 팀 전력 ×1.05를 받습니다 (그 종목 경기장을 우리가 가졌으면 우리가 홈).</p></section>`
@@ -52,7 +54,7 @@ function renderSetup(app, s, cls) {
       <p class="note">야외 구역은 지지도 없이 대결 한 번으로 주인이 바뀝니다. 이기면 바로 점령하고, 지면 잃는 것은 AP뿐입니다. ${FACTIONS[cls.owner].name}의 대표 반(${esc(cls.team)})이 지킵니다.</p></section>`}`;
 
   if (block) {
-    app.innerHTML = `${head}<div class="panel empty"><h2>지금은 도전할 수 없습니다</h2><p class="muted">${esc(block)}</p><a class="btn" href="#school">교내 판도로</a></div>`;
+    app.innerHTML = `${head}<div class="panel empty"><h2>지금은 도전할 수 없습니다</h2><p class="muted">${esc(block)}</p><a class="btn" href="${cls.kind === 'school' ? '#nation' : '#school'}">${cls.kind === 'school' ? '전국 지도로' : '교내 판도로'}</a></div>`;
     return;
   }
 
@@ -66,7 +68,7 @@ function renderSetup(app, s, cls) {
       : key === 'event' ? ` · ${SPORTS.event.prepWeeks}주 준비 후 대결 · 관객 ${audienceOf(s, cls)}` : '';
     return `<button type="button" class="sport ${draft.sport === key ? 'is-on' : ''}" data-sport="${key}" ${no ? 'disabled' : ''}>
       <span class="note">${GROUP[sp.group]}</span>
-      <b>${sp.name}</b><span class="note">${sp.venue}${real !== key ? ' · 비가 와서 농구로 진행' : ''}${!no && homeSide(s, real, 'player') === 'attacker' ? ' · 우리 경기장이라 우리가 홈' : ''}${extraNote}</span>
+      <b>${sp.name}</b><span class="note">${sp.venue}${real !== key ? ' · 비가 와서 농구로 진행' : ''}${!no && cls.kind !== 'school' && homeSide(s, real, 'player') === 'attacker' ? ' · 우리 경기장이라 우리가 홈' : ''}${extraNote}</span>
       ${no ? `<span class="warn-text">${FACTIONS[cls.owner].short} 쪽이 거부한 종목</span>`
         : `<span>예상 승률 <b>${pct(pv.low)}~${pct(pv.high)}</b>${pv.draw > 0.05 ? ` <span class="note">무승부 ${pct(pv.draw)}</span>` : ''}</span>`}
     </button>`;
@@ -237,10 +239,11 @@ function renderMatch(app, s, cls) {
     control = `<section class="panel result ${tone}">
       <h2 class="result-head">${res}</h2>
       <ul class="result-list">
-        ${cls.kind === 'place' ? (r.conquered ? '' : `<li>${esc(cls.label)}은(는) 그대로 ${FACTIONS[r.owner].name} 땅입니다.</li>`)
+        ${cls.kind === 'school' ? `<li>${m.winner === 0 ? `${esc(cls.label)} 자존심 <b>-${r.hit}</b> → ${r.pride}` : m.winner === 1 ? `${esc(cls.label)}의 자존심은 그대로입니다.` : '비겨서 아무것도 바뀌지 않았습니다.'}</li>${r.conquered ? `<li><b>${esc(cls.label)}이(가) 한일고 분교가 됐습니다!</b></li>` : ''}`
+        : cls.kind === 'place' ? (r.conquered ? '' : `<li>${esc(cls.label)}은(는) 그대로 ${FACTIONS[r.owner].name} 땅입니다.</li>`)
           : `<li>${m.winner === null ? '비겨서 지지도는 그대로입니다.' : m.winner === 1 && r.moved === 0 ? `${esc(cls.label)}에는 원래 우리 지지도가 없어서 잃은 것은 없습니다.`
             : `${esc(cls.label)} 우리 지지도 <b>${r.moved > 0 ? '+' : ''}${one(r.moved)}%p</b> → ${Math.round(cls.cls.support.player)}%`}</li>`}
-        ${r.conquered ? `<li><b>${esc(cls.label)}을(를) 점령했습니다!</b> ${cls.kind === 'place' ? '' : r.absorbed ? `담임 ${esc(cls.teacher)} 선생님이 우리 계파에 들어왔습니다.` : `담임 ${esc(cls.teacher)} 선생님은 ${FACTIONS[r.owner].name}에 남았습니다.`}</li>` : ''}
+        ${r.conquered && cls.kind !== 'school' ? `<li><b>${esc(cls.label)}을(를) 점령했습니다!</b> ${cls.kind === 'place' ? '' : r.absorbed ? `담임 ${esc(cls.teacher)} 선생님이 우리 계파에 들어왔습니다.` : `담임 ${esc(cls.teacher)} 선생님은 ${FACTIONS[r.owner].name}에 남았습니다.`}</li>` : ''}
         ${cls.kind === 'class' && m.winner === 0 && !r.conquered ? `<li class="note">점령하려면 이긴 뒤 우리 지지도가 50% 이상이어야 합니다. 몇 번 더 이기거나 수업·영향력으로 지지도를 올려 주세요.</li>` : ''}
         ${mvp ? `<li>MVP: <b>${esc(mvp.name)}</b> (${m.mvp.si === 0 ? '우리 반, 명성 경험치 +60' : esc(m.sides[1].name)}) · 평점 ${m.mvp.r}</li>` : ''}
         <li class="note">출전한 우리 학생은 쓰인 스탯이 조금 자라고, 이기면 사기가 오르고 지면 떨어질 수 있습니다. 경기로 떨어진 컨디션은 그대로 남습니다.</li>
@@ -268,7 +271,7 @@ function renderMatch(app, s, cls) {
   app.querySelectorAll('select[data-opt]').forEach((sel) => sel.addEventListener('change', () => notify(setDuelTactic(sel.dataset.opt, sel.value))));
   app.querySelector('#play')?.addEventListener('click', () => notify(nextSegment()));
   app.querySelector('#sub')?.addEventListener('click', () => notify(duelSub(app.querySelector('#sub-out').value, app.querySelector('#sub-in').value)));
-  app.querySelector('#close')?.addEventListener('click', () => { const r = closeDuel(); toast(r.msg, !r.ok); if (r.ok) location.hash = 'school'; });
+  app.querySelector('#close')?.addEventListener('click', () => { const r = closeDuel(); toast(r.msg, !r.ok); if (r.ok) location.hash = cls.kind === 'school' ? 'nation' : 'school'; });
 }
 
 const tag = (f) => (f >= 1.12 ? '아주 좋음' : f >= 1.04 ? '좋음' : f > 0.96 ? '보통' : f > 0.88 ? '나쁨' : '아주 나쁨');
@@ -282,3 +285,14 @@ function statLine(sport, st = {}) {
   return [st.pa ? `${st.h ?? 0}/${st.pa}` : '', st.hr ? `홈런 ${st.hr}` : '', ip].filter(Boolean).join(' ');
 }
 
+
+// 2막 정복전 상대 학교 안내
+function schoolPanel(cls) {
+  const sc = cls.school, st = cls.state, max = TIERS[sc.tier].pride;
+  const away = awayDistance(sc), pen = 5 * Math.floor(away / 4);
+  const strong = Object.entries(LINES[sc.line].strong).map(([k, v]) => `${SPORTS[k].name} +${Math.round(lineBonus(sc, k) * 100)}%`).join(', ');
+  return `<section class="panel"><div class="row between"><h2>${esc(sc.name)} <span class="note">${REGIONS[sc.region].name} · ${TIERS[sc.tier].name} · ${LINES[sc.line].name}</span></h2><span class="note">자존심 ${st.pride} / ${max}</span></div>
+    <div class="meter wide"><i style="width:${(st.pride / max) * 100}%"></i></div>
+    <p class="note">이기면 자존심을 압승 -30, 승리 -20, 신승 -10 깎습니다. 0이 되면 한일고 분교가 됩니다. 지거나 비기면 잃는 것은 AP뿐이지만, 자존심은 매주 조금씩 회복합니다 (전국 명문은 2배).
+      원정 거리 ${away}칸${pen ? ` · 우리 학생 컨디션 -${pen}%로 시작` : ' · 컨디션 감소 없음'}. 상대는 늘 홈입니다.${strong ? ` 계열 강점: ${strong}.` : ''}</p></section>`;
+}

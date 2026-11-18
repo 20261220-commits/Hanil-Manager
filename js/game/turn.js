@@ -14,6 +14,7 @@ import { intrigueWeekly, answerAllianceOffer, incomeIfNewSemester } from './intr
 import { examWeekly } from './exam.js';
 import { resolveElection, ensureElection } from './election.js';
 import { meetingWeekly } from './meeting.js';
+import { nationWeekly } from './nation.js';
 import { routesWeekly, markTrust, answerPuzzle, ghostGrowth, isOut } from './routes.js';
 import { answerRooftop } from './fight.js';
 import { prepWeekly } from './duel.js';
@@ -404,6 +405,7 @@ export function endWeek() {
   councilWeekly(s, rng); // 교무회의 표결, AI 안건, 흡수 교사 영향력, 부장 자리 AP
   intrigueWeekly(s, rng); // 포섭한 학생 영향력, 동맹 배신·만료, AI 동맹 제안
   routesWeekly(s, rng); // 특수 루트: 패도 해금·열기·공포, 고발 사건, 논란, 괴담·광기 (12장)
+  nationWeekly(s); // 2막: 자존심 회복, 분교 상납, 권역 장악 (11장)
   for (const msg of weeklySchool(s, rng)) addMessage(msg);
   evaluateSemester(s); // 학기 말 평가: 목표 달성 +15, 실패 -20 (14장)
 

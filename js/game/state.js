@@ -11,6 +11,7 @@ import { ensureIntrigue } from './intrigue.js';
 import { ensureExam } from './exam.js';
 import { ensureElection } from './election.js';
 import { ensureRoutes } from './routes.js';
+import { ensureNation } from './nation.js';
 import { ensureGoal } from './campaign.js';
 import { rollBody } from './physique.js';
 
@@ -56,6 +57,7 @@ function upgrade(s) {
   ensureElection(s);
   ensureRoutes(s);
   ensureGoal(s);
+  ensureNation(s); // 2막 전국 정복
   for (const st of s.students) if (!st.h || !st.w) Object.assign(st, rollBody(st)); // 키·몸무게
   s.apMax = apMaxFor(s);
   s.duel ??= null;

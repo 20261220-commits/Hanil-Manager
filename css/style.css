@@ -571,3 +571,32 @@ body[data-mode="menu"] .sidenav { display: none; }
 .pos-chip.f3 { background: var(--surface); color: var(--ink); }
 .pos-chip.f2 { color: var(--warn); border-color: var(--warn); background: var(--warn-bg); }
 .pos-chip.f1 { color: var(--bad); border-color: var(--bad); background: var(--bad-bg); }
+
+/* ---------- 2막 전국 지도 ---------- */
+.f-school { --f: var(--f-none); }
+.meter.wide { display: block; width: 100%; margin: 6px 0; }
+.pill.muted { opacity: .6; }
+ul.plain { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.nation-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 860px) { .nation-grid { grid-template-columns: 1fr; } }
+.nation-map { width: 100%; height: auto; max-height: 76vh; display: block; margin: 0 auto; }
+.hx { fill-opacity: .2; stroke: var(--surface); stroke-width: 1; cursor: default; }
+.hx.has { cursor: pointer; fill-opacity: .34; }
+.hx.closed { fill-opacity: .07; }
+.hx.mine { fill: var(--f-player) !important; fill-opacity: .55; }
+.hx.sel { stroke: var(--ink); stroke-width: 2; }
+.r-capital { fill: #3d6fb6; --r: #3d6fb6; } .r-gangwon { fill: #2d8a7a; --r: #2d8a7a; } .r-chung { fill: #8a6a3a; --r: #8a6a3a; }
+.r-honam { fill: #b0802a; --r: #b0802a; } .r-yeong { fill: #8d4fb0; --r: #8d4fb0; } .r-jeju { fill: #c0472f; --r: #c0472f; }
+.hx-dot { fill: var(--muted); stroke: var(--surface); stroke-width: 1; pointer-events: none; }
+.hx-dot.own { fill: var(--f-player); } .hx-dot.war { fill: var(--bad); }
+.hx-dot.boss { stroke: var(--ink); stroke-width: 1.4; }
+.hx-n { font-size: 7px; fill: var(--muted); pointer-events: none; }
+.hx-home { font-size: 7px; font-weight: 700; text-anchor: middle; fill: var(--surface); pointer-events: none; }
+.hx-region { font-size: 10px; font-weight: 700; fill: var(--ink); opacity: .7; text-anchor: middle; pointer-events: none; paint-order: stroke; stroke: var(--surface); stroke-width: 3px; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
+.lg { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--muted); margin-right: 2px; vertical-align: middle; }
+.lg.own { background: var(--f-player); } .lg.war { background: var(--bad); } .lg.boss { width: 13px; height: 13px; outline: 1.5px solid var(--ink); outline-offset: -1.5px; }
+.region-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+.region-card { text-align: left; display: grid; gap: 4px; padding: 10px 12px; border: 1px solid var(--line); border-left: 4px solid var(--r); border-radius: 10px; background: var(--surface); color: var(--ink); font: inherit; cursor: pointer; fill: none; }
+.region-card.on { background: var(--soft); border-color: var(--r); }
+table.nation tr.hl td { background: var(--soft); }
