@@ -104,7 +104,7 @@ function candidates(s) {
   // 5. 피로
   if (s.fatigue >= 60) out.push({ kind: 'saveAp', href: '#plan', text: 'AP를 2 이상 남기고 주 마치기', why: `피로가 ${s.fatigue}입니다. 남긴 AP는 피로 회복이 됩니다.` });
   // 6. 반장 선거·반 편성 같은 시기 일
-  if (electionOpen(s)) out.push({ kind: 'visit', ref: 'election', href: '#election', text: '반장 선거 살펴보기', why: '이번 주에 우리 반 반장을 뽑습니다.' });
+  if (electionOpen(s)) out.push({ kind: 'visit', ref: 'election', href: '#election', text: '반장 선거 살펴보기', why: '곧 우리 반 반장을 뽑습니다. 후보와 선거 운동을 미리 살펴보세요.' });
   // 7. 교무회의 안건 (반 2개 이상일 때)
   if (!s.school.agenda && s.school.classes.filter((c) => c.owner === 'player').length >= 2 && s.turn >= 5) out.push({ kind: 'agenda', href: '#office', text: '교무회의에 우리 안건 올리기', why: '이번 달 회의에서 특별실이나 규칙을 가져올 수 있습니다.' });
   // 8. 기본: 담임반 아이들 훈련 집중
@@ -171,9 +171,9 @@ export function mentorIntro(s) {
     kind: 'info', tag: '선배 교사',
     title: `${s.mentor.name} 선생님: "모르는 건 저한테 물어보세요"`,
     body: [
-      `옆자리 선배 교사 ${s.mentor.name}입니다. 매주 소식 화면 위쪽에 "이번 주 할 일"을 세 가지씩 적어 둘게요. 해내면 제가 커피값(1건에 1만원)을 드립니다.`,
+      `옆자리 선배 교사 ${s.mentor.name}입니다. 매주 새 주가 되면 화면 오른쪽 아래에 나와서 "이번 주 할 일"을 알려 드릴게요. 왼쪽 "멘토" 칸에서도 볼 수 있어요. 해내면 제가 커피값(1건에 1만원)을 드립니다.`,
       '처음엔 담임반 아이들 상담과 훈련부터 하시고, 지지도가 오른 옆 반에 대결을 걸어 보세요.',
-      '훈련 일정, 교무회의 표결, 반 편성, 대결 명단·전술이 번거로우면 프로필 화면의 "선배에게 맡기기"에서 저한테 맡기셔도 됩니다.',
+      '훈련 일정, 교무회의 표결, 반 편성, 대결 명단·전술이 번거로우면 왼쪽 "멘토" 칸에서 저한테 맡기셔도 됩니다.',
     ].join('\n'),
   });
 }

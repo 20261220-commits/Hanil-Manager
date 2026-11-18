@@ -125,7 +125,7 @@ export function renderNewGame(app) {
       <p class="note">옆자리 선배가 매주 소식 화면에서 "이번 주 할 일"을 알려 주고, 번거로운 일을 맡으면 대신 처리합니다. 이름을 지어 주세요.</p>
       <input class="name-input" id="mentor" maxlength="10" autocomplete="off" placeholder="예: ${DEFAULT_MENTOR}" value="${esc(draft.mentor)}" aria-label="선배 교사 이름">
       <label class="deleg"><input type="checkbox" id="deleg-all" ${draft.delegateAll ? 'checked' : ''}><b>처음이에요: 선배에게 다 맡기기</b>
-        <span class="note">훈련 일정, 교무회의 표결, 반 편성, 대결 명단·전술을 선배가 정합니다. 나중에 프로필에서 하나씩 끌 수 있습니다.</span></label>
+        <span class="note">훈련 일정, 교무회의 표결, 반 편성, 대결 명단·전술을 선배가 정합니다. 나중에 왼쪽 "멘토" 칸에서 하나씩 끌 수 있습니다.</span></label>
 
       <h2>저장 칸</h2>
       <div class="slot-pick" role="radiogroup" aria-label="저장 칸">${slots.map((x) => `
