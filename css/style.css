@@ -425,11 +425,6 @@ html.text-large .roster, html.text-large .stats, html.text-large .note { font-si
 .map-tools { display: flex; gap: 8px 14px; align-items: center; flex-wrap: wrap; }
 .map-tools .legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
 .legend[hidden] { display: none; }
-.show-owners .area.o-player { --f: var(--f-player); } .show-owners .area.o-elder { --f: var(--f-elder); }
-.show-owners .area.o-exam { --f: var(--f-exam); } .show-owners .area.o-pe { --f: var(--f-pe); }
-.show-owners .area.o-innov { --f: var(--f-innov); } .show-owners .area.o-none, .show-owners .area.o-neutral { --f: var(--f-none); }
-.show-owners .area[class*="o-"] { fill: color-mix(in srgb, var(--f) 42%, transparent); stroke: var(--f); stroke-width: 3; }
-.show-owners .area[class*="o-"]:hover, .show-owners .area[class*="o-"]:focus-visible { fill: color-mix(in srgb, var(--f) 62%, transparent); stroke: var(--area-stroke); }
 
 /* 교사 프로필 특성 */
 .bio-label { display: flex; justify-content: space-between; font-weight: 600; }
@@ -616,3 +611,19 @@ h2.mt { margin-top: 20px; }
 :root[data-theme="dark"][data-world="magic"] { --accent: #9a8cf0; }
 :root[data-theme="dark"][data-world="cyber"] { --accent: #3cc3d6; }
 .w-wuxia.is-on { border-color: #8a3b24; } .w-magic.is-on { border-color: #4b3fa0; } .w-cyber.is-on { border-color: #0d7686; }
+
+/* 세계관별 캠퍼스 지도 */
+.fx { pointer-events: none; }
+:root[data-world="wuxia"] .map-full image { filter: sepia(.5) saturate(.75) contrast(1.05); }
+:root[data-world="magic"] .map-full image { filter: saturate(1.15) contrast(1.08); }
+:root[data-world="cyber"] .map-full image { filter: grayscale(.55) contrast(1.25) brightness(.9); }
+.fx-star { animation: fx-twinkle 3.6s ease-in-out infinite; }
+@keyframes fx-twinkle { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+.fx-cloud { animation: fx-drift 26s ease-in-out infinite alternate; }
+@keyframes fx-drift { from { transform: translateX(-3%); } to { transform: translateX(3%); } }
+.fx-scan { animation: fx-scan 7s linear infinite; }
+@keyframes fx-scan { from { transform: translateY(0); } to { transform: translateY(1000%); } }
+@media (prefers-reduced-motion: reduce) { .fx-star, .fx-cloud, .fx-scan { animation: none; } }
+:root[data-world="magic"] .area:hover, :root[data-world="magic"] .area:focus-visible { stroke: #ffd27a; }
+:root[data-world="cyber"] .area:hover, :root[data-world="cyber"] .area:focus-visible { stroke: #3cf0ff; }
+:root[data-world="wuxia"] .area:hover, :root[data-world="wuxia"] .area:focus-visible { stroke: #fbf6ea; }
