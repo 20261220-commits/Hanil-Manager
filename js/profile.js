@@ -1,8 +1,11 @@
 // 프로필: 이름, 담당 과목, 칭호(얻은 것 중 고르기), 교사 능력치, 기록
-import { getState, setTitle } from './game/state.js';
+import { getState, setTitle, setWorldOf } from './game/state.js';
+import { setWorld } from './world.js';
+import { WORLDS } from './content/worlds.js';
+import { worldPicker } from './menu.js';
 import { subjectByKey } from './content/subjects.js';
 import { TITLES } from './content/titles.js';
-import { notify } from './chrome.js';
+import { notify, toast } from './chrome.js';
 import { esc, traitCards } from './ui.js';
 import { save } from './game/state.js';
 import { applyPersona, canEditPersona } from './game/persona.js';
@@ -49,6 +52,10 @@ export function renderProfile(app) {
       </div>
       <aside class="side-stack">
         <section class="panel">
+          <h2>세계관 <span class="note">규칙은 그대로, 용어와 분위기만 바뀝니다</span></h2>
+          ${worldPicker(s.world)}
+        </section>
+        <section class="panel">
           <h2>담당 과목 · ${sub ? sub.name : '없음'}</h2>
           ${sub ? `<dl class="kv"><dt>능력치</dt><dd>${sub.bonus} +2</dd><dt>훈련</dt><dd>${sub.train}</dd><dt>강한 대결</dt><dd>${sub.strong}</dd><dt>특수 효과</dt><dd>${sub.effect}</dd></dl>` : ''}
         </section>
@@ -68,6 +75,7 @@ export function renderProfile(app) {
     notify({ ok: true, msg: `칭호를 "${r.value}"(으)로 바꿨습니다.` });
   }));
   const rerender = () => renderProfile(app);
+  app.querySelectorAll('[data-world]').forEach((b) => b.addEventListener('click', () => { setWorldOf(b.dataset.world); setWorld(b.dataset.world); rerender(); toast(`세계관: ${WORLDS[b.dataset.world].name}`); }));
   app.querySelector('#edit-bio')?.addEventListener('click', () => {
     edit = { bio: per?.bio ?? '', traits: null, source: null, note: '', busy: false };
     rerender();

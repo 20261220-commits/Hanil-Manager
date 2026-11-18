@@ -58,6 +58,7 @@ function upgrade(s) {
   ensureRoutes(s);
   ensureGoal(s);
   ensureNation(s); // 2막 전국 정복
+  s.world ??= 'real'; // 세계관 팩 (화면 용어만 바뀜)
   for (const st of s.students) if (!st.h || !st.w) Object.assign(st, rollBody(st)); // 키·몸무게
   s.apMax = apMaxFor(s);
   s.duel ??= null;
@@ -136,7 +137,7 @@ export const currentSlot = () => slot;
 export function quitToTitle() { save(); state = null; slot = null; }
 
 // 새 게임: 프로필(이름, 과목, 칭호)로 교사를 만들고 담임반을 생성한다.
-export function newGame({ name, subject, title, slotN, persona = null, seed = Math.floor(Math.random() * 1e9) }) {
+export function newGame({ name, subject, title, slotN, persona = null, world = 'real', seed = Math.floor(Math.random() * 1e9) }) {
   const rng = makeRng(seed);
   const sub = subjectByKey(subject);
   const teacher = { ...BASE_TEACHER };
@@ -147,6 +148,7 @@ export function newGame({ name, subject, title, slotN, persona = null, seed = Ma
     rngStep: 0,
     turn: 1,
     className: '1학년 4반',
+    world,
     teacher,
     freeObservations: 3,
     students: makeHomeroom(rng),
@@ -204,3 +206,6 @@ export function setTitle(name) {
 
 export const unreadCount = () => state.inbox.filter((m) => !m.read || (m.choices && !m.resolved)).length;
 export const pendingDecisions = () => state.inbox.filter((m) => m.choices && !m.resolved);
+
+// 세계관 바꾸기 (규칙은 그대로, 화면 용어만)
+export function setWorldOf(key) { state.world = key; save(); }

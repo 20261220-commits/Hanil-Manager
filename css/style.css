@@ -600,3 +600,19 @@ ul.plain { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
 .region-card { text-align: left; display: grid; gap: 4px; padding: 10px 12px; border: 1px solid var(--line); border-left: 4px solid var(--r); border-radius: 10px; background: var(--surface); color: var(--ink); font: inherit; cursor: pointer; fill: none; }
 .region-card.on { background: var(--soft); border-color: var(--r); }
 table.nation tr.hl td { background: var(--soft); }
+
+/* ---------- 세계관 팩: 강조색 ---------- */
+h2.mt { margin-top: 20px; }
+.world-opt b { font-size: 16px; }
+:root[data-world="wuxia"] { --accent: #8a3b24; --area-hover: rgba(138, 59, 36, 0.28); }
+:root[data-world="magic"] { --accent: #4b3fa0; --area-hover: rgba(75, 63, 160, 0.28); }
+:root[data-world="cyber"] { --accent: #0d7686; --area-hover: rgba(13, 118, 134, 0.28); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"])[data-world="wuxia"] { --accent: #d0795a; }
+  :root:not([data-theme="light"])[data-world="magic"] { --accent: #9a8cf0; }
+  :root:not([data-theme="light"])[data-world="cyber"] { --accent: #3cc3d6; }
+}
+:root[data-theme="dark"][data-world="wuxia"] { --accent: #d0795a; }
+:root[data-theme="dark"][data-world="magic"] { --accent: #9a8cf0; }
+:root[data-theme="dark"][data-world="cyber"] { --accent: #3cc3d6; }
+.w-wuxia.is-on { border-color: #8a3b24; } .w-magic.is-on { border-color: #4b3fa0; } .w-cyber.is-on { border-color: #0d7686; }

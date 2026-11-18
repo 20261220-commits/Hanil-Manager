@@ -18,6 +18,7 @@ import { renderElection } from './election-view.js';
 import { renderMeeting } from './meeting-view.js';
 import { renderRoutes } from './routes-view.js';
 import { renderNation } from './nation-view.js';
+import { setWorld } from './world.js';
 import { renderNews } from './news-view.js';
 import { renderEnding } from './ending-view.js';
 import { getState } from './game/state.js';
@@ -41,6 +42,7 @@ async function route({ keepScroll = false } = {}) {
       if (location.hash.slice(1) !== name) { history.replaceState(null, '', `#${name}`); }
       document.body.dataset.mode = 'menu';
       crumbsEl.hidden = true;
+      setWorld('real');
       MENU[name](app);
       if (!keepScroll) window.scrollTo(0, 0);
       return;
@@ -48,6 +50,7 @@ async function route({ keepScroll = false } = {}) {
 
     // 게임이 끝난 세이브는 결과 화면만 보여 준다
     if (getState().gameOver && hash !== 'ending') { location.hash = 'ending'; return; }
+    setWorld(getState().world);
     if (hash === 'ending') {
       document.body.dataset.mode = 'menu';
       crumbsEl.hidden = true;

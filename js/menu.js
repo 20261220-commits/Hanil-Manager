@@ -1,6 +1,7 @@
 // 게임 밖 화면: 로딩, 대기 화면, 새로 플레이(프로필 만들기), 세이브 파일, 설정
 import { listSlots, lastSlot, loadSlot, deleteSlot, exportSlot, importSlot, newGame, SLOT_COUNT } from './game/state.js';
 import { SUBJECTS } from './content/subjects.js';
+import { WORLDS } from './content/worlds.js';
 import { TITLES } from './content/titles.js';
 import { getSettings, setSettings } from './settings.js';
 import { loadJSON } from './data.js';
@@ -68,10 +69,10 @@ export function renderTitle(app) {
 
 // ---------- 새로 플레이 (프로필 만들기) ----------
 
-const draft = { step: 1, name: '', subject: null, title: TITLES[0].name, slotN: null, confirmOverwrite: false, bio: '', traits: null, source: null, note: '', busy: false };
+const draft = { world: 'real', step: 1, name: '', subject: null, title: TITLES[0].name, slotN: null, confirmOverwrite: false, bio: '', traits: null, source: null, note: '', busy: false };
 
 export function resetDraft() {
-  Object.assign(draft, { step: 1, name: '', subject: null, title: TITLES[0].name, slotN: null, confirmOverwrite: false, bio: '', traits: null, source: null, note: '', busy: false });
+  Object.assign(draft, { world: 'real', step: 1, name: '', subject: null, title: TITLES[0].name, slotN: null, confirmOverwrite: false, bio: '', traits: null, source: null, note: '', busy: false });
 }
 
 export function renderNewGame(app) {
@@ -85,7 +86,10 @@ export function renderNewGame(app) {
       <h2>선생님의 이름을 정해 주세요</h2>
       <p class="note">학생들과 교무실에서 부를 이름입니다. 1~10자.</p>
       <input class="name-input-big" id="name" maxlength="10" autocomplete="off" placeholder="예: 김한일" value="${esc(draft.name)}" aria-label="이름">
-      <p class="field-error" id="name-error" hidden>이름을 1자 이상 입력해 주세요.</p>`;
+      <p class="field-error" id="name-error" hidden>이름을 1자 이상 입력해 주세요.</p>
+      <h2 class="mt">세계관</h2>
+      <p class="note">규칙은 같고 학교의 모습과 용어가 바뀝니다. 플레이 중에도 프로필에서 바꿀 수 있습니다.</p>
+      ${worldPicker(draft.world)}`;
   } else if (draft.step === 2) {
     body = `
       <h2>담당 과목을 골라 주세요</h2>
@@ -146,6 +150,7 @@ export function renderNewGame(app) {
 
   const nameInput = app.querySelector('#name');
   if (nameInput) { nameInput.focus(); nameInput.addEventListener('input', () => { draft.name = nameInput.value; }); }
+  app.querySelectorAll('[data-world]').forEach((b) => b.addEventListener('click', () => { draft.name = app.querySelector('#name')?.value ?? draft.name; draft.world = b.dataset.world; renderNewGame(app); }));
   app.querySelectorAll('[data-subject]').forEach((b) => b.addEventListener('click', () => { draft.subject = b.dataset.subject; renderNewGame(app); }));
   app.querySelectorAll('[data-slot]').forEach((b) => b.addEventListener('click', () => { draft.slotN = +b.dataset.slot; draft.confirmOverwrite = false; renderNewGame(app); }));
   bindBioEditor(app, draft, () => renderNewGame(app), { name: draft.name, subject: SUBJECTS.find((x) => x.key === draft.subject)?.name ?? '' });
@@ -167,7 +172,7 @@ export function renderNewGame(app) {
     if (draft.step < 4) { draft.step += 1; renderNewGame(app); return; }
     const target = slots.find((x) => x.n === draft.slotN);
     if (target.summary && !draft.confirmOverwrite) { draft.confirmOverwrite = true; renderNewGame(app); return; }
-    newGame({ name: draft.name, subject: draft.subject, title: draft.title, slotN: draft.slotN,
+    newGame({ name: draft.name, subject: draft.subject, title: draft.title, slotN: draft.slotN, world: draft.world,
       persona: draft.traits ? { bio: draft.bio.trim(), traits: draft.traits, source: draft.source } : null });
     resetDraft();
     location.hash = 'news';
@@ -273,3 +278,10 @@ export function renderSettings(app) {
   return [];
 }
 
+
+// 세계관 고르기 (새 게임·프로필에서 같이 쓴다)
+export function worldPicker(cur) {
+  return `<div class="subject-grid world-grid" role="radiogroup" aria-label="세계관" data-raw>${Object.entries(WORLDS).map(([k, w]) => `
+    <button type="button" class="subject world-opt w-${k}${cur === k ? ' is-on' : ''}" role="radio" aria-checked="${cur === k}" data-world="${k}">
+      <b>${w.name}</b><span class="effect">${w.desc}</span></button>`).join('')}</div>`;
+}
