@@ -15,6 +15,7 @@ import { examWeekly } from './exam.js';
 import { resolveElection, ensureElection } from './election.js';
 import { meetingWeekly } from './meeting.js';
 import { nationWeekly } from './nation.js';
+import { mentorWeekEnd, mentorWeekStart } from './mentor.js';
 import { routesWeekly, markTrust, answerPuzzle, ghostGrowth, isOut } from './routes.js';
 import { answerRooftop } from './fight.js';
 import { prepWeekly } from './duel.js';
@@ -259,6 +260,7 @@ export function canEndWeek() {
 export function endWeek() {
   const s = getState();
   const block = canEndWeek(); if (block) return fail(block);
+  mentorWeekEnd(s); // 선배 교사: 이번 주 할 일 결산과 보상
   const rng = nextRng();
   const t = s.training;
   const grew = [];
@@ -418,6 +420,7 @@ export function endWeek() {
   incomeIfNewSemester(s); // 학기 초 예산 수입 (룰북 3.6)
   ensureElection(s); // 새 학년이면 반장 선거 준비
   checkEnd(s); // 캠퍼스 전부 점령이면 교장 추대, 신임 0이면 전근 발령
+  mentorWeekStart(s, resolveDecision); // 맡긴 일 처리(훈련·교무회의 표결·반 편성), 새 할 일
   s.freeObservations = 0;
   s.usedThisWeek = {};
   s.overtime = 0;

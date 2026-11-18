@@ -3,6 +3,7 @@ import { getState, setTitle, setWorldOf } from './game/state.js';
 import { setWorld } from './world.js';
 import { WORLDS } from './content/worlds.js';
 import { worldPicker } from './menu.js';
+import { DELEGATES, setMentorName, setDelegate } from './game/mentor.js';
 import { subjectByKey } from './content/subjects.js';
 import { TITLES } from './content/titles.js';
 import { notify, toast } from './chrome.js';
@@ -51,6 +52,13 @@ export function renderProfile(app) {
       </section>
       </div>
       <aside class="side-stack">
+        <section class="panel" id="mentor">
+          <h2>선배 교사 <span class="note">이번 주 할 일을 알려 주고, 맡긴 일을 대신 합니다</span></h2>
+          <div class="row"><label class="field grow"><span>이름</span><input id="mentor-name" maxlength="10" autocomplete="off" value="${esc(s.mentor.name)}"></label>
+            <button type="button" class="btn" id="mentor-save">이름 바꾸기</button></div>
+          <h3>선배에게 맡기기</h3>
+          <div class="deleg-list">${Object.entries(DELEGATES).map(([k, d]) => `<label class="deleg"><input type="checkbox" data-deleg="${k}" ${s.delegate[k] ? 'checked' : ''}><b>${d.name}</b><span class="note">${d.desc}</span></label>`).join('')}</div>
+        </section>
         <section class="panel">
           <h2>세계관 <span class="note">규칙은 그대로, 용어와 분위기만 바뀝니다</span></h2>
           ${worldPicker(s.world)}
@@ -75,6 +83,8 @@ export function renderProfile(app) {
     notify({ ok: true, msg: `칭호를 "${r.value}"(으)로 바꿨습니다.` });
   }));
   const rerender = () => renderProfile(app);
+  app.querySelector('#mentor-save').addEventListener('click', () => notify(setMentorName(app.querySelector('#mentor-name').value)));
+  app.querySelectorAll('[data-deleg]').forEach((c) => c.addEventListener('change', () => notify(setDelegate(c.dataset.deleg, c.checked))));
   app.querySelectorAll('[data-world]').forEach((b) => b.addEventListener('click', () => { setWorldOf(b.dataset.world); setWorld(b.dataset.world); rerender(); toast(`세계관: ${WORLDS[b.dataset.world].name}`); }));
   app.querySelector('#edit-bio')?.addEventListener('click', () => {
     edit = { bio: per?.bio ?? '', traits: null, source: null, note: '', busy: false };

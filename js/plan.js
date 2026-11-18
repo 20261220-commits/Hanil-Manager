@@ -4,6 +4,7 @@ import { ACTIONS, setTraining, doTalk, doSnack, doBonding, doReport, doSeminar, 
 import { needLevel, topNeed } from './game/students.js';
 import { PERSONALITIES, TALKS } from './content/personality.js';
 import { notify } from './chrome.js';
+import { setDelegate } from './game/mentor.js';
 import { esc, moralePill, needBar } from './ui.js';
 
 const PERS = Object.fromEntries(PERSONALITIES.map((p) => [p.name, p]));
@@ -29,11 +30,12 @@ export function renderPlan(app) {
 
     <section class="panel">
       <h2>훈련 일정 <span class="note">AP 없음 · 언제든 바꿀 수 있음</span></h2>
+      ${s.delegate?.training ? `<p class="deleg-banner"><b>${esc(s.mentor.name)} 선생님에게 맡김</b> · ${esc(t.why ?? '고르게')} 정했습니다. 직접 정하려면 <button type="button" class="btn small" id="take-training">직접 하기</button></p>` : ''}
       <div class="train">
         <label for="tr-intel">지적 <output id="o-intel">${t.intel}%</output></label>
-        <input type="range" id="tr-intel" min="0" max="100" step="5" value="${t.intel}">
+        <input type="range" id="tr-intel" min="0" max="100" step="5" value="${t.intel}" ${s.delegate?.training ? 'disabled' : ''}>
         <label for="tr-body">신체 <output id="o-body">${t.body}%</output></label>
-        <input type="range" id="tr-body" min="0" max="100" step="5" value="${t.body}">
+        <input type="range" id="tr-body" min="0" max="100" step="5" value="${t.body}" ${s.delegate?.training ? 'disabled' : ''}>
         <span class="lbl">휴식</span><b id="o-rest">${t.rest}%</b>
       </div>
       <div class="trainbar" aria-hidden="true"><i class="ti" style="width:${t.intel}%"></i><i class="tb" style="width:${t.body}%"></i><i class="tr" style="width:${t.rest}%"></i></div>
@@ -63,6 +65,7 @@ export function renderPlan(app) {
     </div>`;
 
   // 훈련 배분: 지적 + 신체가 100을 넘지 않게 하고 나머지는 휴식
+  app.querySelector('#take-training')?.addEventListener('click', () => notify(setDelegate('training', false)));
   const intel = app.querySelector('#tr-intel'), body = app.querySelector('#tr-body');
   const sync = (changed) => {
     let i = +intel.value, b = +body.value;

@@ -512,7 +512,7 @@ body[data-mode="menu"] .sidenav { display: none; }
 .tile-stat .meter.wide { margin-top: 4px; }
 
 /* 소식 화면 (기본 화면) */
-.news-screen { display: grid; gap: 12px; min-height: calc(100vh - 140px); grid-template-rows: auto 1fr auto; }
+.news-screen { display: grid; gap: 12px; min-height: calc(100vh - 140px); grid-template-rows: auto auto 1fr auto; }
 .news-top { display: flex; align-items: stretch; gap: 8px; flex-wrap: wrap; }
 .news-head { display: grid; gap: 2px; margin-right: auto; }
 .news-date { display: grid; place-items: center; padding: 6px 16px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); font-family: var(--mono); font-size: 13px; }
@@ -627,3 +627,27 @@ h2.mt { margin-top: 20px; }
 :root[data-world="magic"] .area:hover, :root[data-world="magic"] .area:focus-visible { stroke: #ffd27a; }
 :root[data-world="cyber"] .area:hover, :root[data-world="cyber"] .area:focus-visible { stroke: #3cf0ff; }
 :root[data-world="wuxia"] .area:hover, :root[data-world="wuxia"] .area:focus-visible { stroke: #fbf6ea; }
+
+/* ---------- 선배 교사: 이번 주 할 일 ---------- */
+.mentor-card { position: relative; display: grid; grid-template-columns: 170px 1fr; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 12px; padding: 12px 16px; }
+.mentor-who { display: flex; gap: 10px; align-items: center; align-self: start; }
+.mentor-who div { display: grid; }
+.avatar.small { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); font-family: var(--display); font-size: 18px; flex: none; }
+.mentor-body h2 { font-size: 15px; margin: 0; }
+.todo { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 6px; }
+.todo li { display: grid; grid-template-columns: 22px 1fr auto; gap: 10px; align-items: center; padding: 6px 8px; border-radius: 8px; background: var(--soft); }
+.todo li.done { opacity: .65; }
+.todo li.done b { text-decoration: line-through; }
+.todo-check { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--accent); display: grid; place-items: center; font-size: 12px; color: var(--accent-ink); }
+.todo li.done .todo-check { background: var(--accent); }
+.todo-text { display: grid; }
+.mentor-set { position: absolute; right: 14px; bottom: 8px; display: none; }
+@media (max-width: 700px) { .mentor-card { grid-template-columns: 1fr; } }
+.deleg-list { display: grid; gap: 8px; }
+.deleg { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; align-items: start; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; }
+.deleg input { margin-top: 3px; }
+.deleg span { grid-column: 2; }
+.deleg-banner { padding: 10px 14px; border-radius: 10px; background: var(--soft); border-left: 4px solid var(--accent); }
+.name-input { font: inherit; font-size: 17px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); width: min(260px, 100%); margin-bottom: 8px; }
+.field.grow { flex: 1; }
+#mentor h3 { margin-top: 12px; margin-bottom: 6px; }

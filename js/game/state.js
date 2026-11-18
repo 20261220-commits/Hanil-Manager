@@ -12,6 +12,7 @@ import { ensureExam } from './exam.js';
 import { ensureElection } from './election.js';
 import { ensureRoutes } from './routes.js';
 import { ensureNation } from './nation.js';
+import { ensureMentor, mentorIntro, autoTraining } from './mentor.js';
 import { ensureGoal } from './campaign.js';
 import { rollBody } from './physique.js';
 
@@ -59,6 +60,7 @@ function upgrade(s) {
   ensureGoal(s);
   ensureNation(s); // 2막 전국 정복
   s.world ??= 'real'; // 세계관 팩 (화면 용어만 바뀜)
+  ensureMentor(s); // 선배 교사와 위임
   for (const st of s.students) if (!st.h || !st.w) Object.assign(st, rollBody(st)); // 키·몸무게
   s.apMax = apMaxFor(s);
   s.duel ??= null;
@@ -137,7 +139,7 @@ export const currentSlot = () => slot;
 export function quitToTitle() { save(); state = null; slot = null; }
 
 // 새 게임: 프로필(이름, 과목, 칭호)로 교사를 만들고 담임반을 생성한다.
-export function newGame({ name, subject, title, slotN, persona = null, world = 'real', seed = Math.floor(Math.random() * 1e9) }) {
+export function newGame({ name, subject, title, slotN, persona = null, world = 'real', mentor = null, delegateAll = false, seed = Math.floor(Math.random() * 1e9) }) {
   const rng = makeRng(seed);
   const sub = subjectByKey(subject);
   const teacher = { ...BASE_TEACHER };
@@ -155,12 +157,15 @@ export function newGame({ name, subject, title, slotN, persona = null, world = '
     profile: { name, subject, title, titles: [TITLES[0].name] },
   });
   slot = slotN;
+  if (mentor) state.mentor.name = mentor;
+  if (delegateAll) { for (const k in state.delegate) state.delegate[k] = true; state.training = autoTraining(state); }
   if (persona) applyPersona(state, persona, { start: true });
   addMessage({
     kind: 'info',
     title: `입학식: ${name} 선생님, 1학년 4반 담임이 되었습니다`,
     body: `담당 과목은 ${sub ? sub.name : '없음'}입니다 (${sub ? `${sub.bonus} +2` : ''}). 담임반 30명이 배정됐고, 이번 주만 학생 관찰이 3번 무료입니다. 숨은 원석이 한 명 있으니 잘 찾아보세요. 첫 학기 목표는 담임반 지지도 70% 이상과 반 1개 추가 점령입니다.`,
   });
+  mentorIntro(state);
   write(META_KEY, { lastSlot: slotN });
   save();
   return state;

@@ -10,6 +10,7 @@ import { REGIONS, TIERS, LINES, awayDistance, lineBonus } from './game/nation.js
 import { PERSONALITIES, TALKS } from './content/personality.js';
 import { notify, toast } from './chrome.js';
 import { esc, moralePill } from './ui.js';
+import { mentorTalk } from './game/mentor.js';
 import { factionChip, supportBar } from './school-view.js';
 
 const PERS = Object.fromEntries(PERSONALITIES.map((p) => [p.name, p]));
@@ -80,14 +81,23 @@ function renderSetup(app, s, cls) {
     const sp = SPORTS[sport];
     if (!draft.lineup || draft.forSport !== sport) {
       Object.assign(draft, autoSetup(s, sport, {}, cls), { forSport: sport });
+      if (s.delegate?.duel) draft.talk = mentorTalk(draft.lineup, (id) => PERS[byId(s, id)?.personality], TALKS);
     }
+    const byMentor = s.delegate?.duel && !draft.manual;
     const inLineup = new Set(draft.lineup.map((l) => l.id));
     const bench = s.students.filter((st) => !inLineup.has(st.id));
     const talkCount = TALKS.map((_, i) => ({
       good: draft.lineup.filter((l) => PERS[byId(s, l.id).personality].talk[i] === '◎').length,
       bad: draft.lineup.filter((l) => PERS[byId(s, l.id).personality].talk[i] === '✕').length,
     }));
-    prep = `
+    prep = byMentor ? `
+      <section class="panel deleg-banner">
+        <div class="row between"><h2>2. 명단·전술·훈화 <span class="note">${esc(s.mentor.name)} 선생님이 정함</span></h2>
+          <button type="button" class="btn small" id="manual">직접 정하기</button></div>
+        <p class="note">전술: ${Object.values(draft.tactics).map(esc).join(' · ')} · 경기 전 훈화: ${draft.talk === null || draft.talk === undefined ? '없음' : TALKS[draft.talk]}</p>
+        <p class="note">명단: ${draft.lineup.map((l) => `${esc(byId(s, l.id).name)}(${POS_LABEL[l.pos]})`).join(', ')}</p>
+      </section>
+      <div class="row end"><button type="button" class="btn primary big" id="start" ${s.ap < DUEL_AP ? 'disabled' : ''}>${sport === 'event' ? `행사 날짜 잡기 (${DUEL_AP} AP, ${SPORTS.event.prepWeeks}주 뒤)` : `경기 시작 (${DUEL_AP} AP)`}</button></div>` : `
       <section class="panel">
         <div class="row between"><h2>2. 전술 <span class="note">${sp.name}</span></h2>
           <button type="button" class="btn" id="auto">자동 설정</button></div>
@@ -128,7 +138,8 @@ function renderSetup(app, s, cls) {
     rerender();
   }));
   if (!draft.sport) return;
-  app.querySelector('#auto').addEventListener('click', () => {
+  app.querySelector('#manual')?.addEventListener('click', () => { draft.manual = true; rerender(); });
+  app.querySelector('#auto')?.addEventListener('click', () => {
     Object.assign(draft, autoSetup(s, draft.forSport, {}, cls));
     toast('자동 설정을 마쳤습니다.');
     rerender();
@@ -229,7 +240,7 @@ function renderMatch(app, s, cls) {
         <span aria-hidden="true">→</span>
         <select id="sub-in" aria-label="들어갈 학생">${benchList.map((p) => `<option value="${p.id}">${esc(p.name)} (${p.condition}%)</option>`).join('')}</select>
         <button type="button" class="btn" id="sub">교체</button></div>` : ''}
-      <div class="row end"><button type="button" class="btn primary big" id="play">${sp.segs[m.seg]} ${m.seg === 0 ? '시작' : '진행'} ▶</button></div>
+      <div class="row end">${s.delegate?.duel ? `<button type="button" class="btn big" id="autoplay">${esc(s.mentor.name)} 선생님에게 끝까지 맡기기</button>` : ''}<button type="button" class="btn primary big" id="play">${sp.segs[m.seg]} ${m.seg === 0 ? '시작' : '진행'} ▶</button></div>
     </section>`;
   } else {
     const r = d.result;
@@ -270,6 +281,7 @@ function renderMatch(app, s, cls) {
 
   app.querySelectorAll('select[data-opt]').forEach((sel) => sel.addEventListener('change', () => notify(setDuelTactic(sel.dataset.opt, sel.value))));
   app.querySelector('#play')?.addEventListener('click', () => notify(nextSegment()));
+  app.querySelector('#autoplay')?.addEventListener('click', () => { let r; for (let i = 0; i < 12 && !getState().duel?.m.done; i++) r = nextSegment(); notify(r ?? { ok: true, msg: '' }); });
   app.querySelector('#sub')?.addEventListener('click', () => notify(duelSub(app.querySelector('#sub-out').value, app.querySelector('#sub-in').value)));
   app.querySelector('#close')?.addEventListener('click', () => { const r = closeDuel(); toast(r.msg, !r.ok); if (r.ok) location.hash = cls.kind === 'school' ? 'nation' : 'school'; });
 }

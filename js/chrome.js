@@ -56,7 +56,7 @@ export function renderGamebar() {
   const naNav = document.getElementById('nav-nation');
   if (naNav) naNav.hidden = !s.act2;
   const mtNav = document.getElementById('nav-meeting');
-  if (mtNav) { mtNav.hidden = yearTurn(s.turn) < 41; mtNav.classList.toggle('hot', yearTurn(s.turn) === 48); }
+  if (mtNav) { mtNav.hidden = yearTurn(s.turn) < 41 || !!s.delegate?.meeting; mtNav.classList.toggle('hot', yearTurn(s.turn) === 48); }
   const n = unreadCount();
   const count = document.getElementById('inbox-count');
   count.textContent = n;

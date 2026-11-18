@@ -1,4 +1,5 @@
 // 반장 선거 화면 (3월 2주): 후보 정하기, 선거 운동, 예상 득표
+import { markVisit } from './game/mentor.js';
 import { getState } from './game/state.js';
 import { classById } from './game/school.js';
 import { ensureElection, electionOpen, setCandidate, campaign, expectedVotes, candidatePower, CAMPAIGN, CAMPAIGN_AP } from './game/election.js';
@@ -10,6 +11,7 @@ const KEYS = ['통솔', '친화력', '언어력', '자존감', '평정심', '기
 
 export function renderElection(app) {
   const s = getState();
+  markVisit(s, 'election');
   const e = ensureElection(s);
   if (!e) {
     app.innerHTML = '<div class="panel empty"><h1>반장 선거는 끝났습니다</h1><a class="btn" href="#class">담임반으로</a></div>';

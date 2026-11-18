@@ -6,6 +6,7 @@ import { weekLabel } from './game/calendar.js';
 import { classById } from './game/school.js';
 import { postsOwned } from './game/politics.js';
 import { goalProgress } from './game/campaign.js';
+import { weekTodo, mentorIntro } from './game/mentor.js';
 import { notify } from './chrome.js';
 import { esc, moralePill } from './ui.js';
 import { HOMEROOM_ID } from './content/factions.js';
@@ -26,6 +27,8 @@ function buildDeck(s) {
 
 export function renderNews(app, { fresh = false } = {}) {
   const s = getState();
+  if (!s.mentor?.intro) { mentorIntro(s); save(); }
+  const todo = weekTodo(s);
   if (fresh || deck.turn !== s.turn || !deck.ids.length) buildDeck(s);
   // 그 사이 새로 온 소식(AI가 만든 프로필 이벤트 등)은 뒤에 붙인다
   for (const m of s.inbox) if (unread(m) && !deck.ids.includes(m.id)) deck.ids.push(m.id);
@@ -34,7 +37,7 @@ export function renderNews(app, { fresh = false } = {}) {
   const left = s.inbox.filter(unread).length;
 
   if (!m) {
-    app.innerHTML = `<div class="news-screen"><div class="panel empty"><h1>받은 소식이 없습니다</h1><a class="btn" href="#campus">캠퍼스로</a></div></div>`;
+    app.innerHTML = `<div class="news-screen">${mentorCard(s, todo)}<div class="panel empty"><h1>받은 소식이 없습니다</h1><a class="btn" href="#campus">캠퍼스로</a></div></div>`;
     return [{ label: '소식' }];
   }
   // 결정할 필요 없는 소식은 열면 읽은 것으로
@@ -51,6 +54,7 @@ export function renderNews(app, { fresh = false } = {}) {
         <span class="news-date">${esc(s.weekLabel)}</span>
         ${pending(m) ? '<span class="news-flag">응답 필요</span>' : ''}
       </header>
+      ${mentorCard(s, todo)}
       <div class="news-body">
         <article class="news-card k-${m.kind}">
           <h2>${esc(m.title)}</h2>
@@ -110,4 +114,25 @@ function studentCard(st) {
     </dl>
     <a class="btn small" href="#s-${st.id}">학생 보기</a>
   </aside>`;
+}
+
+// 선배 교사의 "이번 주 할 일" (입문 도우미)
+function mentorCard(s, todo) {
+  const mt = s.mentor;
+  const n = todo.filter((t) => t.done).length;
+  const deleg = Object.entries(s.delegate).filter(([, v]) => v).length;
+  return `<section class="mentor-card" aria-label="선배 교사의 이번 주 할 일">
+    <div class="mentor-who"><span class="avatar small">${initial(mt.name)}</span>
+      <div><b>${esc(mt.name)} 선생님</b><span class="note">선배 교사${deleg ? ` · 맡긴 일 ${deleg}가지` : ''}</span></div></div>
+    <div class="mentor-body">
+      <div class="row between"><h2>이번 주 할 일 <span class="note">${n} / ${todo.length} · 해내면 1건에 1만원</span></h2>
+        ${mt.last ? `<span class="note">지난주 ${mt.last.done}/${mt.last.total}${mt.last.done ? ` · 커피값 +${mt.last.done}만원` : ''}</span>` : ''}</div>
+      ${todo.length ? `<ol class="todo">${todo.map((t) => `<li class="${t.done ? 'done' : ''}">
+        <span class="todo-check" aria-hidden="true">${t.done ? '✓' : ''}</span>
+        <span class="todo-text"><b>${esc(t.text)}</b><span class="note">${esc(t.why)}</span></span>
+        ${t.done ? '<span class="note">완료</span>' : `<a class="btn small" href="${t.href}">하러 가기</a>`}</li>`).join('')}</ol>`
+        : '<p class="note">이번 주는 특별히 챙길 일이 없어요. 하고 싶은 걸 해 보세요.</p>'}
+    </div>
+    <a class="mentor-set note" href="#profile">맡기기 설정</a>
+  </section>`;
 }

@@ -2,6 +2,7 @@
 import { listSlots, lastSlot, loadSlot, deleteSlot, exportSlot, importSlot, newGame, SLOT_COUNT } from './game/state.js';
 import { SUBJECTS } from './content/subjects.js';
 import { WORLDS } from './content/worlds.js';
+import { DEFAULT_MENTOR } from './game/mentor.js';
 import { TITLES } from './content/titles.js';
 import { getSettings, setSettings } from './settings.js';
 import { loadJSON } from './data.js';
@@ -69,10 +70,10 @@ export function renderTitle(app) {
 
 // ---------- 새로 플레이 (프로필 만들기) ----------
 
-const draft = { world: 'real', step: 1, name: '', subject: null, title: TITLES[0].name, slotN: null, confirmOverwrite: false, bio: '', traits: null, source: null, note: '', busy: false };
+const draft = { world: 'real', mentor: '', delegateAll: false, step: 1, name: '', subject: null, title: TITLES[0].name, slotN: null, confirmOverwrite: false, bio: '', traits: null, source: null, note: '', busy: false };
 
 export function resetDraft() {
-  Object.assign(draft, { world: 'real', step: 1, name: '', subject: null, title: TITLES[0].name, slotN: null, confirmOverwrite: false, bio: '', traits: null, source: null, note: '', busy: false });
+  Object.assign(draft, { world: 'real', mentor: '', delegateAll: false, step: 1, name: '', subject: null, title: TITLES[0].name, slotN: null, confirmOverwrite: false, bio: '', traits: null, source: null, note: '', busy: false });
 }
 
 export function renderNewGame(app) {
@@ -120,6 +121,12 @@ export function renderNewGame(app) {
           <b>${t.name}</b><span>${i === 0 ? '사용 가능' : `잠김 · ${t.how}`}</span>
         </label>`).join('')}</div>
 
+      <h2>선배 교사</h2>
+      <p class="note">옆자리 선배가 매주 소식 화면에서 "이번 주 할 일"을 알려 주고, 번거로운 일을 맡으면 대신 처리합니다. 이름을 지어 주세요.</p>
+      <input class="name-input" id="mentor" maxlength="10" autocomplete="off" placeholder="예: ${DEFAULT_MENTOR}" value="${esc(draft.mentor)}" aria-label="선배 교사 이름">
+      <label class="deleg"><input type="checkbox" id="deleg-all" ${draft.delegateAll ? 'checked' : ''}><b>처음이에요: 선배에게 다 맡기기</b>
+        <span class="note">훈련 일정, 교무회의 표결, 반 편성, 대결 명단·전술을 선배가 정합니다. 나중에 프로필에서 하나씩 끌 수 있습니다.</span></label>
+
       <h2>저장 칸</h2>
       <div class="slot-pick" role="radiogroup" aria-label="저장 칸">${slots.map((x) => `
         <button type="button" class="slot${draft.slotN === x.n ? ' is-on' : ''}" role="radio" aria-checked="${draft.slotN === x.n}" data-slot="${x.n}">
@@ -152,6 +159,8 @@ export function renderNewGame(app) {
   if (nameInput) { nameInput.focus(); nameInput.addEventListener('input', () => { draft.name = nameInput.value; }); }
   app.querySelectorAll('[data-world]').forEach((b) => b.addEventListener('click', () => { draft.name = app.querySelector('#name')?.value ?? draft.name; draft.world = b.dataset.world; renderNewGame(app); }));
   app.querySelectorAll('[data-subject]').forEach((b) => b.addEventListener('click', () => { draft.subject = b.dataset.subject; renderNewGame(app); }));
+  app.querySelector('#mentor')?.addEventListener('input', (e) => { draft.mentor = e.target.value; });
+  app.querySelector('#deleg-all')?.addEventListener('change', (e) => { draft.delegateAll = e.target.checked; });
   app.querySelectorAll('[data-slot]').forEach((b) => b.addEventListener('click', () => { draft.slotN = +b.dataset.slot; draft.confirmOverwrite = false; renderNewGame(app); }));
   bindBioEditor(app, draft, () => renderNewGame(app), { name: draft.name, subject: SUBJECTS.find((x) => x.key === draft.subject)?.name ?? '' });
   app.querySelector('#back')?.addEventListener('click', () => { draft.step -= 1; draft.confirmOverwrite = false; renderNewGame(app); });
@@ -173,6 +182,7 @@ export function renderNewGame(app) {
     const target = slots.find((x) => x.n === draft.slotN);
     if (target.summary && !draft.confirmOverwrite) { draft.confirmOverwrite = true; renderNewGame(app); return; }
     newGame({ name: draft.name, subject: draft.subject, title: draft.title, slotN: draft.slotN, world: draft.world,
+      mentor: draft.mentor.trim() || DEFAULT_MENTOR, delegateAll: draft.delegateAll,
       persona: draft.traits ? { bio: draft.bio.trim(), traits: draft.traits, source: draft.source } : null });
     resetDraft();
     location.hash = 'news';
