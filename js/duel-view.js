@@ -3,7 +3,7 @@ import { getState } from './game/state.js';
 import { SPORTS, isUnlocked, fit, POS_LABEL } from './game/match.js';
 import { target, challengeBlock, refusedSport, preview, autoSetup, beginDuel, nextSegment, setDuelTactic, duelSub, closeDuel, actualSport, homeSide, DUEL_AP,
   scout, scouted, judgeOf, audienceOf, oppTacticsOf, SCOUT_AP, scheduleEvent, investPrep, prepGain, EVENT_INVEST_AP, EVENT_INVEST_MONEY, EVENT_MONEY_CAP } from './game/duel.js';
-import { JUDGE_LABEL, AUDIENCES } from './game/match.js';
+import { JUDGE_LABEL, AUDIENCES, famFor, famKey, famLabel } from './game/match.js';
 import { weekLabel } from './game/calendar.js';
 import { FACTIONS } from './content/factions.js';
 import { PERSONALITIES, TALKS } from './content/personality.js';
@@ -96,11 +96,11 @@ function renderSetup(app, s, cls) {
       </section>
       <section class="panel">
         <h2>3. 명단 <span class="note">자리를 바꾸면 그 학생과 자리를 맞바꿉니다 · 적합도는 그 자리 가중치로 낸 점수</span></h2>
-        <div class="table-wrap"><table class="roster lineup"><thead><tr><th>자리</th><th>학생</th><th>적합도</th><th>컨디션</th><th>사기</th></tr></thead><tbody>
+        <div class="table-wrap"><table class="roster lineup"><thead><tr><th>자리</th><th>학생</th><th>적합도</th><th>숙련</th><th>컨디션</th><th>사기</th></tr></thead><tbody>
           ${draft.lineup.map((l, i) => { const st = byId(s, l.id); return `<tr>
             <td>${POS_LABEL[l.pos]}</td>
             <td><select data-slot="${i}" aria-label="${POS_LABEL[l.pos]} 자리">${s.students.filter((x) => !((x.outUntil ?? 0) > s.turn)).map((x) => `<option value="${x.id}" ${x.id === l.id ? 'selected' : ''}>${esc(x.name)} (${one(fit(x, l.pos))})</option>`).join('')}</select></td>
-            <td class="num">${one(fit(st, l.pos))}</td><td class="num ${st.condition < 70 ? 'warn-text' : ''}">${st.condition}%</td><td>${moralePill(st.morale)}</td></tr>`; }).join('')}
+            <td class="num">${one(fit(st, l.pos))}</td><td>${famCell(st, sport, l.pos)}</td><td class="num ${st.condition < 70 ? 'warn-text' : ''}">${st.condition}%</td><td>${moralePill(st.morale)}</td></tr>`; }).join('')}
         </tbody></table></div>
         <p class="note">벤치 ${bench.length}명 · 교체 ${sp.subs >= 10 ? '자유' : `${sp.subs}번`}. 컨디션이 낮으면 전력이 떨어집니다 (80% ×0.93, 60% ×0.85).</p>
       </section>
@@ -187,6 +187,13 @@ function renderPrep(app, s, cls) {
 }
 
 const byId = (s, id) => s.students.find((x) => x.id === id);
+// 그 자리 포지션 숙련도 (스포츠 3종목만)
+function famCell(st, sport, pos) {
+  const fam = famFor(st, sport);
+  if (!fam) return '<span class="note">-</span>';
+  const f = fam[famKey(pos)] ?? 20;
+  return `<span class="pos-chip ${f >= 18 ? 'f5' : f >= 15 ? 'f4' : f >= 11 ? 'f3' : f >= 6 ? 'f2' : 'f1'}">${famLabel(f)}</span>`;
+}
 const rerender = () => window.dispatchEvent(new CustomEvent('game:changed'));
 
 function tacticSelects(sp, tactics, pre) {

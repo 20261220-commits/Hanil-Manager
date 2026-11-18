@@ -6,6 +6,7 @@ import { classById, transfer, placeById } from './school.js';
 import { teacherStat, shiftMorale } from './turn.js';
 import { yearTurn, yearOf } from './calendar.js';
 import { TRAITS } from '../content/traits.js';
+import { weightClassBonus } from './physique.js';
 import { ROUTES, CONCEPTS, MYSTERIES, PUZZLES, ENDINGS, FIGHT_W, followerBonus } from '../content/routes.js';
 import { HOMEROOM_ID, classLabel } from '../content/factions.js';
 
@@ -52,7 +53,8 @@ export function endingOf(s) {
 // 부상·정학·실종으로 빠진 학생
 export const isOut = (s, st) => (st.outUntil ?? 0) > s.turn;
 export const available = (s) => s.students.filter((st) => !isOut(s, st));
-export const fightPower = (st) => Object.entries(FIGHT_W).reduce((a, [k, w]) => a + st.stats[k] * w, 0) / Object.values(FIGHT_W).reduce((a, w) => a + w, 0);
+// 싸움 전력 = 싸움 스탯 가중 평균 + 체급 보정 (몸무게)
+export const fightPower = (st) => Object.entries(FIGHT_W).reduce((a, [k, w]) => a + st.stats[k] * w, 0) / Object.values(FIGHT_W).reduce((a, w) => a + w, 0) + weightClassBonus(st);
 
 // ---------- 공포 지지도 (12.3) ----------
 

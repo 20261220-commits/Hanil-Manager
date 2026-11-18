@@ -6,6 +6,8 @@ import { STAT_GROUPS, STAT_LABEL, NEEDS } from './content/stats.js';
 import { PERSONALITIES, TALKS } from './content/personality.js';
 import { TRAITS } from './content/traits.js';
 import { needLevel } from './game/students.js';
+import { bodyOf, bodyType } from './game/physique.js';
+import { famFor, famLabel, SPORT_POS, POS_LABEL } from './game/match.js';
 import { esc, stars, moralePill, needBar, statClass, traitBadge, fameStars, LUCK_COLOR } from './ui.js';
 
 const statName = (k) => STAT_LABEL[k] ?? k;
@@ -40,6 +42,7 @@ export function renderStudent(app, id) {
     </div>
 
     <div class="layout">
+      <div class="side-stack">
       <section class="panel">
         <h2>능력치</h2>
         <div class="statcols">${STAT_GROUPS.map((g) => `
@@ -51,6 +54,8 @@ export function renderStudent(app, id) {
         </div>
         <p class="note">▲▼는 성격에 따른 성장 방향입니다 (성장치 ×1.10 / ×0.90).</p>
       </section>
+      ${bodyPanel(s)}
+      </div>
 
       <aside class="side-stack">
         <section class="panel">
@@ -107,4 +112,21 @@ export function renderStudent(app, id) {
   app.querySelector('#counsel').addEventListener('click', () => notify(doCounsel(id)));
   app.querySelector('#focus').addEventListener('click', () => notify(doFocus(id, app.querySelector('#focus-stat').value)));
   return [{ label: '담임반', href: '#class' }, { label: s.name }];
+}
+
+// 체격과 포지션 숙련도 (스포츠 대결)
+const SPORT_NAME = { soccer: '축구', basketball: '농구', baseball: '야구' };
+const famTone = (f) => (f >= 18 ? 'f5' : f >= 15 ? 'f4' : f >= 11 ? 'f3' : f >= 6 ? 'f2' : 'f1');
+function bodyPanel(st) {
+  const b = bodyOf(st);
+  return `<section class="panel">
+    <h2>체격과 포지션 <span class="note">키·몸무게는 포지션 적합도에 보정으로 들어갑니다 (센터·골키퍼는 키, 포수·장타는 몸무게)</span></h2>
+    <div class="body-row"><div class="tile-stat"><span class="lbl">키</span><b>${b.h}cm</b></div><div class="tile-stat"><span class="lbl">몸무게</span><b>${b.w}kg</b></div><div class="tile-stat"><span class="lbl">체형</span><b>${bodyType(b)}</b></div></div>
+    ${Object.keys(SPORT_POS).map((sp) => {
+      const fam = famFor(st, sp);
+      const list = Object.entries(fam).sort((a, c) => c[1] - a[1]);
+      return `<div class="pos-row"><h3>${SPORT_NAME[sp]}</h3><div class="pos-chips">${list.map(([p, f]) => `<span class="pos-chip ${famTone(f)}" title="${famLabel(f)} ${Math.floor(f)}"><b>${POS_LABEL[p]}</b> ${famLabel(f)}</span>`).join('')}</div></div>`;
+    }).join('')}
+    <p class="note">포지션 숙련도: 주 포지션 100% · 능숙 96% · 가능 90% · 어색 82% · 불가 72%의 전력. 대결에서 그 자리를 뛰면 조금씩 익숙해집니다.</p>
+  </section>`;
 }

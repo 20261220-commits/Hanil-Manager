@@ -559,3 +559,15 @@ body[data-mode="menu"] .sidenav { display: none; }
 .end-kv { text-align: left; grid-template-columns: 1fr auto 1fr auto; gap: 6px 16px; }
 @media (max-width: 640px) { .end-kv { grid-template-columns: 1fr auto; } }
 .news-kv dd.ok { color: var(--good); }
+
+/* 체격과 포지션 */
+.body-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.pos-row { display: grid; gap: 4px; }
+.pos-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.pos-chip { font-size: 12px; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--line); background: var(--soft); color: var(--muted); white-space: nowrap; }
+.pos-chip b { font-weight: 600; color: inherit; }
+.pos-chip.f5 { background: var(--good); border-color: var(--good); color: var(--accent-ink); }
+.pos-chip.f4 { background: var(--good-bg); border-color: var(--good); color: var(--good); }
+.pos-chip.f3 { background: var(--surface); color: var(--ink); }
+.pos-chip.f2 { color: var(--warn); border-color: var(--warn); background: var(--warn-bg); }
+.pos-chip.f1 { color: var(--bad); border-color: var(--bad); background: var(--bad-bg); }

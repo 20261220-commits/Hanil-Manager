@@ -10,6 +10,7 @@ import { teacherStat, shiftMorale } from './turn.js';
 import { yearTurn, yearOf } from './calendar.js';
 import { placeById } from './school.js';
 import { STATS, STAT_GROUPS } from '../content/stats.js';
+import { growBody } from './physique.js';
 import { TRAITS } from '../content/traits.js';
 import { FACTION_KEYS, AI_FACTIONS, FACTIONS, HOMEROOM_ID, classLabel } from '../content/factions.js';
 
@@ -153,7 +154,8 @@ export function startMeeting() {
   const now = Object.fromEntries(s.school.classes.map((c) => [c.id, materialize(s, c, rng)]));
   const ids = (g) => byGrade(g).map((c) => c.id);
   // 3학년 졸업, 1→2학년, 2→3학년 진급, 신입생은 1학년으로
-  const promote = (g) => byGrade(g).flatMap((c) => now[c.id]).map((c) => ({ ...c, g: g + 1, since: s.turn }));
+  // 진급: 학년 +1, 키·몸무게가 조금 자란다
+  const promote = (g) => byGrade(g).flatMap((c) => now[c.id]).map((c) => ({ ...c, g: g + 1, since: s.turn, ...growBody(fromCompact(c, s.turn), rng, g) }));
   mt.graduates = byGrade(3).reduce((a, c) => a + now[c.id].length, 0);
   mt.next = { ...snake(promote(1), ids(2)), ...snake(promote(2), ids(3)), ...snake(mt.freshmen.map((c) => ({ ...c, since: s.turn })), ids(1)) };
   mt.phase = 'round';

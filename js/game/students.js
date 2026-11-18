@@ -117,7 +117,7 @@ export function toCompact(st, since) {
   return {
     id: st.id, n: st.name, g: st.grade, s: STATS.map((k) => st.stats[k]), p: st.pa, pt: st.potTier, l: st.luck,
     pe: st.personality, t: st.trait, f: st.faction ?? 'none', b: st.bond ?? 50, m: st.morale ?? '보통', fe: st.fameExp ?? 0,
-    tg: st.tags ?? [], since,
+    tg: st.tags ?? [], since, h: st.h, w: st.w,
   };
 }
 
@@ -130,6 +130,7 @@ export function fromCompact(c, turn) {
     id: c.id, name: c.n, grade: c.g, stats, pa: c.p, potTier: c.pt, luck: c.l, personality: c.pe, trait: c.t,
     ca: Math.min(calcCA(stats), c.p), faction: c.f, bond: c.b, morale: c.m, fameExp: c.fe, tags: [...(c.tg ?? [])],
     condition: 100, needs, observed: false, estimate: null, prog: {}, focus: null, lastCounsel: 0, calmUntil: 0,
+    h: c.h, w: c.w,
   };
 }
 

@@ -4,6 +4,7 @@ import { getState, save, nextRng, addMessage, count, checkTitles } from './state
 import { makeRng, clamp } from './rng.js';
 import { isVacation } from './calendar.js';
 import { classById, rosterOf, transfer, placeById, placeInfo, championClass } from './school.js';
+import { famFor, famKey } from './match.js';
 import { SPORTS, JUDGES, AUDIENCES, createMatch, playSegment, preTalk, aiTimeout, substitute, isUnlocked, fit, autoLineup, bestTactics, estimateWin } from './match.js';
 import { FACTIONS, HOMEROOM_ID, classLabel } from '../content/factions.js';
 import { makeClassRoster } from './students.js';
@@ -13,7 +14,8 @@ import { fearToRespect, isOut, solved } from './routes.js';
 
 export const DUEL_AP = 2;
 export const SCOUT_AP = 1;
-export const SPORT_KEYS = Object.keys(SPORTS).filter((k) => SPORTS[k].group === 'sport');
+// 반 대항전 3종목 (모듈 순환을 피하려고 쓸 때 계산)
+export const sportKeys = () => Object.keys(SPORTS).filter((k) => SPORTS[k].group === 'sport');
 
 // 이번 주 그 상대의 토론 심사위원과 행사 관객 (상대 분석으로 미리 볼 수 있다)
 const pickBy = (list, n) => list[Math.abs(Math.floor(n)) % list.length];
@@ -116,7 +118,7 @@ export function refusedSport(s, t, attackerRoster = s.students) {
   if (!FACTIONS[t.owner]?.refuses) return null;
   const theirs = t.roster();
   let worst = null;
-  for (const sport of SPORT_KEYS) {
+  for (const sport of sportKeys()) {
     const r = teamStrength(theirs, sport) / teamStrength(attackerRoster, sport);
     if (!worst || r < worst.r) worst = { sport, r };
   }
@@ -377,6 +379,9 @@ export function applyToStudents(s, m, si, rng) {
     if (lost && rng.next() < (st.stats['자존감'] >= 13 ? 0.25 : 0.5)) shiftMorale(st, -1);
     const pos = side.lineup.find((l) => l.id === id)?.pos ?? 'MF';
     for (const k of GROW[pos] ?? ['운동신경', '체력']) st.prog[k] = (st.prog[k] ?? 0) + 0.25;
+    // 그 자리에서 뛰면 포지션 숙련도가 조금 오른다
+    const fam = famFor(st, m.sport);
+    if (fam) { st.fam = { ...(st.fam ?? {}), [m.sport]: { ...fam, [famKey(pos)]: Math.min(20, (fam[famKey(pos)] ?? 10) + 0.5) } }; }
   }
   if (!m.mvp) return '';
   const name = m.sides[m.mvp.si].players[m.mvp.id].name;

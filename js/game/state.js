@@ -12,6 +12,7 @@ import { ensureExam } from './exam.js';
 import { ensureElection } from './election.js';
 import { ensureRoutes } from './routes.js';
 import { ensureGoal } from './campaign.js';
+import { rollBody } from './physique.js';
 
 export const SLOT_COUNT = 3;
 const VERSION = 4;
@@ -55,6 +56,7 @@ function upgrade(s) {
   ensureElection(s);
   ensureRoutes(s);
   ensureGoal(s);
+  for (const st of s.students) if (!st.h || !st.w) Object.assign(st, rollBody(st)); // 키·몸무게
   s.apMax = apMaxFor(s);
   s.duel ??= null;
   for (const st of s.students) {

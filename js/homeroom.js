@@ -1,3 +1,5 @@
+import { bodyOf } from './game/physique.js';
+import { famFor, POS_LABEL } from './game/match.js';
 // 담임반 화면: FM의 선수단 목록처럼 30명을 한눈에 본다.
 import { getState } from './game/state.js';
 import { needLevel, topNeed } from './game/students.js';
@@ -15,7 +17,11 @@ const COLS = [
   { key: 'ca', label: '현재 능력', get: (s) => s.ca },
   { key: 'pa', label: '포텐 (추정)', get: (s) => (s.estimate ? s.estimate.high : -1) },
   { key: 'room', label: '호실', get: (s) => s.room },
+  { key: 'height', label: '키/몸무게', get: (s) => bodyOf(s).h },
+  { key: 'pos', label: '주 포지션 (축구·농구·야구)', get: (s) => mainPos(s, 'soccer') },
 ];
+// 종목별 주 포지션 (숙련도가 가장 높은 자리)
+const mainPos = (st, sport) => POS_LABEL[Object.entries(famFor(st, sport)).sort((a, b) => b[1] - a[1])[0][0]];
 let sort = { key: 'no', dir: 1 };
 let filter = 'all';
 
@@ -65,6 +71,8 @@ export function renderHomeroom(app) {
             <td>${stars(s.ca, '현재 능력')}</td>
             <td>${s.estimate ? stars(s.estimate.high, '포텐 추정') : '<span class="note">관찰 필요</span>'}</td>
             <td class="num">${s.room.slice(3)}</td>
+            <td class="num">${bodyOf(s).h} / ${bodyOf(s).w}</td>
+            <td class="note">${['soccer', 'basketball', 'baseball'].map((sp) => mainPos(s, sp)).join(' · ')}</td>
           </tr>`).join('')}</tbody>
       </table>
     </div>

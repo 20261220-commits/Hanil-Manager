@@ -4,6 +4,8 @@ import { clamp } from './rng.js';
 import { MORALE } from '../content/stats.js';
 import { PERSONALITIES, TALKS } from '../content/personality.js';
 import { MORALE_MULT } from './school.js';
+import { bodyBonus, bodyOf } from './physique.js';
+import { makeRng } from './rng.js';
 
 const PERS = Object.fromEntries(PERSONALITIES.map((p) => [p.name, p]));
 
@@ -170,12 +172,51 @@ export function resultGrade(sport, diff) {
 // ---------- 개인·팀 전력 ----------
 
 const stat = (p, k) => p.stats[k] + (p.mods?.[k] ?? 0);
+// 적합도 = 포지션 가중치로 낸 스탯 평균 + 체격 보정 (키·몸무게, physique.js)
 export function fit(p, pos) {
   const w = weightOf(pos);
   let sum = 0, tw = 0;
   for (const k in w) { sum += stat(p, k) * w[k]; tw += w[k]; }
-  return sum / tw;
+  return sum / tw + bodyBonus(p, pos);
 }
+
+// ---------- 포지션 숙련도 (FM식 1~20) ----------
+// 종목마다 주 포지션은 18~20, 나머지는 주 포지션과의 적합도 차이로 정해진다. 경기에서 뛰면 오른다.
+export const SPORT_POS = {
+  soccer: ['GK', 'DF', 'MF', 'FW'],
+  basketball: ['PG', 'SG', 'SF', 'PF', 'C'],
+  baseball: ['P', 'CA', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF'],
+};
+export const famKey = (pos) => (pos === 'RP' ? 'P' : pos);
+const hashStr = (str) => [...String(str)].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) % 2147483647, 7);
+
+export function famFor(st, sport) {
+  if (!SPORT_POS[sport]) return null;
+  if (st.fam?.[sport]) return st.fam[sport];
+  const rng = makeRng(hashStr(`${st.name}|${st.id}|${sport}|fam`));
+  const fits = Object.fromEntries(SPORT_POS[sport].map((p) => [p, fit(st, p)]));
+  const best = Object.entries(fits).sort((a, b) => b[1] - a[1])[0][0];
+  const out = {};
+  for (const p of SPORT_POS[sport]) {
+    out[p] = p === best ? rng.int(18, 20) : clamp(Math.round(15 - (fits[best] - fits[p]) * 4 + rng.gauss() * 2.5), 2, 17);
+  }
+  return out;
+}
+export function famMult(f) {
+  if (f >= 18) return 1;
+  if (f >= 15) return 0.96;
+  if (f >= 11) return 0.9;
+  if (f >= 6) return 0.82;
+  return 0.72;
+}
+export function famLabel(f) {
+  if (f >= 18) return '주 포지션';
+  if (f >= 15) return '능숙';
+  if (f >= 11) return '가능';
+  if (f >= 6) return '어색';
+  return '불가';
+}
+const sportOfPositions = (positions) => (positions.includes('GK') ? 'soccer' : positions.includes('PG') ? 'basketball' : positions.includes('CA') ? 'baseball' : null);
 
 // 컨디션 배율 (9.2): 100% 1.00 · 80% 0.93 · 60% 0.85 · 40% 이하 0.75 사이를 잇는다.
 export function condMult(c) {
@@ -192,6 +233,7 @@ function power(m, side, id, pos) {
   const p = side.players[id];
   let v = fit(p, pos) * condMult(p.condition) * MORALE_MULT[Math.max(0, MORALE.indexOf(p.morale))];
   v *= side.segMult?.[id] ?? 1;
+  if (p.fam) v *= famMult(p.fam[famKey(pos)] ?? 20); // 포지션 숙련도
   if (pos === 'PR') v *= 1 + 0.03 * (p.fameStars ?? 0); // 홍보: 명성 별당 3%
   // 승부욕: 지고 있는 팀은 마지막 구간에 개인 전력 + (승부욕 - 10) × 0.8%
   if (side.trailingLast) v *= 1 + (stat(p, '승부욕') - 10) * 0.008;
@@ -235,8 +277,10 @@ const teamAvg = (m, side) => {
 // 자리마다 가장 잘 맞는 학생을 넣는다 (점수 높은 짝부터 차례로).
 export function autoLineup(players, positions, exclude = []) {
   const pool = players.filter((p) => !exclude.includes(p.id));
+  const sport = sportOfPositions(positions);
+  const famOf = (p) => (sport ? p.fam ?? famFor(p, sport) : null);
   const pairs = [];
-  positions.forEach((pos, i) => pool.forEach((p) => pairs.push({ i, pos, id: p.id, v: fit(p, pos) * condMult(p.condition) })));
+  positions.forEach((pos, i) => pool.forEach((p) => { const f = famOf(p); pairs.push({ i, pos, id: p.id, v: fit(p, pos) * condMult(p.condition) * (f ? famMult(f[famKey(pos)] ?? 20) : 1) }); }));
   pairs.sort((a, b) => b.v - a.v);
   const out = Array(positions.length), used = new Set();
   for (const x of pairs) {
@@ -265,7 +309,8 @@ export function createMatch(sport, a, b, rng, extra = {}) {
     const players = {};
     for (const p of x.players) {
       players[p.id] = { id: p.id, name: p.name, stats: { ...p.stats }, morale: p.morale, condition: p.condition, luck: p.luck,
-        personality: p.personality, trait: p.trait, mods: {}, fameStars: [100, 300, 700, 1500, 3000].filter((x) => (p.fameExp ?? 0) >= x).length };
+        personality: p.personality, trait: p.trait, mods: {}, fameStars: [100, 300, 700, 1500, 3000].filter((x) => (p.fameExp ?? 0) >= x).length,
+        grade: p.grade, ...bodyOf(p), fam: famFor(p, sport) };
     }
     const list = Object.values(players);
     const lineup = x.lineup ?? autoLineup(list, SPORTS[sport].positions(tactics));
