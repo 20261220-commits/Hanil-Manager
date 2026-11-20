@@ -4,6 +4,7 @@ import { esc } from './ui.js';
 
 const AUTO = 'auto';
 export const OPTIONS = {
+  sex: { label: '성별', values: [['m', '남자'], ['f', '여자']] },
   skin: { label: '피부', type: 'color', values: [['#f6d5b8', '밝은 편'], ['#f2c9a5', '보통'], ['#d9a77e', '구릿빛'], ['#a8754f', '진한 편']] },
   hair: { label: '머리 모양', values: [[AUTO, '세계관 기본'], ['short', '짧은 머리'], ['side', '가르마'], ['buzz', '스포츠'], ['curly', '곱슬'], ['long', '긴 머리'], ['ponytail', '묶은 머리'], ['bun', '상투'], ['undercut', '투블럭'], ['bald', '민머리']] },
   hairColor: { label: '머리 색', type: 'color', values: [['#16120f', '검정'], ['#3a2a20', '흑갈색'], ['#6b4428', '갈색'], ['#a0703c', '밝은 갈색'], ['#d8b25a', '금색'], ['#9aa0a6', '회색'], ['#e8e8e8', '흰색'], ['#a33b2a', '빨강']] },
@@ -16,8 +17,8 @@ export const OPTIONS = {
   acc: { label: '장신구', values: [[AUTO, '세계관 기본'], ['none', '없음'], ['hat', '마법사 모자'], ['visor', '바이저'], ['band', '머리띠'], ['hairpin', '비녀']] },
 };
 
-export const MENTOR_LOOK = { skin: '#f2c9a5', hair: AUTO, hairColor: AUTO, beard: 'none', sideburns: 'none', glasses: AUTO, eye: '#1c2330', outfit: AUTO, cloth: AUTO, acc: AUTO };
-export const PLAYER_LOOK = { skin: '#f6d5b8', hair: 'side', hairColor: '#16120f', beard: 'none', sideburns: 'none', glasses: 'none', eye: '#1c2330', outfit: AUTO, cloth: AUTO, acc: AUTO };
+export const MENTOR_LOOK = { sex: 'm', skin: '#f2c9a5', hair: AUTO, hairColor: AUTO, beard: 'none', sideburns: 'none', glasses: AUTO, eye: '#1c2330', outfit: AUTO, cloth: AUTO, acc: AUTO };
+export const PLAYER_LOOK = { sex: 'm', skin: '#f6d5b8', hair: 'side', hairColor: '#16120f', beard: 'none', sideburns: 'none', glasses: 'none', eye: '#1c2330', outfit: AUTO, cloth: AUTO, acc: AUTO };
 
 // 세계관 기본 모습
 const WORLD = {
@@ -78,7 +79,8 @@ function beard(L) {
   }
 }
 function eyes(L) {
-  return `<g class="npc-eyes"><ellipse cx="84" cy="108" rx="4.5" ry="5.5" fill="${L.eye}"/><ellipse cx="116" cy="108" rx="4.5" ry="5.5" fill="${L.eye}"/>
+  const lash = L.sex === 'f' ? '<path d="M78 102 L75 99 M80 101 L78 97 M122 102 L125 99 M120 101 L122 97" stroke="#1c2330" stroke-width="1.6" stroke-linecap="round"/>' : '';
+  return `${lash}<g class="npc-eyes"><ellipse cx="84" cy="108" rx="4.5" ry="5.5" fill="${L.eye}"/><ellipse cx="116" cy="108" rx="4.5" ry="5.5" fill="${L.eye}"/>
     <circle cx="85.5" cy="106" r="1.4" fill="#fff"/><circle cx="117.5" cy="106" r="1.4" fill="#fff"/></g>
     <path d="M76 96 Q84 92 92 96 M108 96 Q116 92 124 96" stroke="${L.hair === 'bald' ? '#5a3a22' : L.hairColor}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
 }
@@ -93,7 +95,8 @@ function glasses(L) {
 }
 function outfit(L) {
   const c = L.cloth;
-  const shape = (d = 'M18 240 C24 186 60 170 100 170 C140 170 176 186 182 240 Z') => `<path d="${d}" fill="${c}"/>`;
+  const f = L.sex === 'f';
+  const shape = (d = f ? 'M28 240 C32 190 64 172 100 172 C136 172 168 190 172 240 Z' : 'M18 240 C24 186 60 170 100 170 C140 170 176 186 182 240 Z') => `<path d="${d}" fill="${c}"/>`;
   switch (L.outfit) {
     case 'cardigan': return `${shape()}<path d="M82 170 L100 204 L118 170 Z" fill="#ffffff"/><path d="M96 176 L100 214 L104 176 Z" fill="#8a3b3b"/>
       <path d="M86 172 L96 226 M114 172 L104 226" stroke="#d9a520" stroke-width="2" fill="none"/><rect x="88" y="222" width="24" height="16" rx="2" fill="#ffffff" stroke="#c9ced6"/>`;
@@ -105,7 +108,7 @@ function outfit(L) {
       <path d="M92 182 L90 214 M108 182 L110 214" stroke="#ffffff" stroke-width="2"/><rect x="74" y="214" width="52" height="20" rx="6" fill="#000" opacity=".12"/>`;
     case 'robe': return `${shape()}<path d="M72 174 L122 240" stroke="#8a3b24" stroke-width="9"/><path d="M128 174 L96 214" stroke="#8a3b24" stroke-width="9"/>
       <rect x="40" y="226" width="120" height="10" fill="#8a3b24" opacity=".9"/>`;
-    case 'wizard': return `${shape('M14 240 C22 182 60 168 100 168 C140 168 178 182 186 240 Z')}<path d="M80 170 L100 198 L120 170" fill="none" stroke="#e2b94a" stroke-width="3"/>
+    case 'wizard': return `${shape(f ? 'M24 240 C28 186 62 170 100 170 C138 170 172 186 176 240 Z' : 'M14 240 C22 182 60 168 100 168 C140 168 178 182 186 240 Z')}<path d="M80 170 L100 198 L120 170" fill="none" stroke="#e2b94a" stroke-width="3"/>
       <circle cx="100" cy="200" r="6" fill="#e2b94a"/><path d="M100 194 l2 4 4 1 -3 3 1 4 -4 -2 -4 2 1 -4 -3 -3 4 -1 z" fill="#fff6d0"/>`;
     case 'cyber': return `${shape()}<path d="M62 184 L82 240 M138 184 L118 240" stroke="#3cf0ff" stroke-width="2.5"/><path d="M84 172 L100 196 L116 172" fill="none" stroke="#3cf0ff" stroke-width="2"/>
       <circle cx="140" cy="206" r="4" fill="#3cf0ff"/>`;
@@ -136,11 +139,11 @@ export function avatarSvg(look, world = 'real', { cls = '', label = '캐릭터',
     <rect x="88" y="140" width="24" height="34" rx="8" fill="${skinDark}"/>
     <ellipse cx="58" cy="110" rx="7" ry="10" fill="${skinDark}"/><ellipse cx="142" cy="110" rx="7" ry="10" fill="${skinDark}"/>
     ${sideburns(L)}
-    <ellipse cx="100" cy="106" rx="42" ry="48" fill="${L.skin}"/>
+    ${L.sex === 'f' ? `<path d="M58 100 C58 66 78 58 100 58 C122 58 142 66 142 100 C142 132 124 152 100 152 C76 152 58 132 58 100 Z" fill="${L.skin}"/>` : `<ellipse cx="100" cy="106" rx="42" ry="48" fill="${L.skin}"/>`}
     ${beard(L)}
     ${L.acc === 'visor' ? '' : eyes(L)}
     <circle cx="76" cy="124" r="6" fill="#e88a7a" opacity=".3"/><circle cx="124" cy="124" r="6" fill="#e88a7a" opacity=".3"/>
-    <path class="npc-smile" d="M88 133 Q100 141 112 133" stroke="#8a3b3b" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path class="npc-smile" d="M88 133 Q100 141 112 133" stroke="${L.sex === 'f' ? '#c0505a' : '#8a3b3b'}" stroke-width="3" fill="none" stroke-linecap="round"/>
     <ellipse class="npc-mouth" cx="100" cy="136" rx="7" ry="5" fill="#8a3b3b"/>
     ${hairFront(L)}${accFront(L)}
     ${L.acc === 'visor' ? visor(L) : glasses(L)}
@@ -178,12 +181,17 @@ export function bindAvatarEditor(root, look, world, defaults, onChange) {
     const b = e.target.closest('button');
     if (!b) return;
     let next;
-    if (b.dataset.k) next = { ...MENTOR_LOOK, ...look, [b.dataset.k]: b.dataset.v };
-    else if (b.dataset.av === 'reset') next = { ...defaults };
+    if (b.dataset.k) {
+      next = { ...MENTOR_LOOK, ...look, [b.dataset.k]: b.dataset.v };
+      if (b.dataset.k === 'sex' && b.dataset.v === 'f' && next.beard !== 'none') next.beard = 'none'; // 바꾸고 나서 다시 고를 수 있다
+    }
+    else if (b.dataset.av === 'reset') next = { ...defaults, sex: look.sex ?? 'm', ...(look.sex === 'f' && defaults.hair !== 'auto' ? { hair: 'long' } : {}) };
     else if (b.dataset.av === 'random') {
       next = {};
       for (const [k, o] of Object.entries(OPTIONS)) { const vs = o.values.map((x) => x[0]); next[k] = vs[Math.floor(Math.random() * vs.length)]; }
-      if (Math.random() < 0.6) next.beard = 'none';
+      next.sex = look.sex ?? 'm';
+      if (Math.random() < (next.sex === 'f' ? 1 : 0.6)) next.beard = 'none';
+      if (next.sex === 'f' && Math.random() < 0.6) next.hair = ['long', 'ponytail', 'side', 'bun'][Math.floor(Math.random() * 4)];
       if (Math.random() < 0.5) next.acc = AUTO;
     } else return;
     onChange(next);

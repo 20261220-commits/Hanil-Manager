@@ -144,7 +144,7 @@ export const currentSlot = () => slot;
 export function quitToTitle() { save(); state = null; slot = null; }
 
 // 새 게임: 프로필(이름, 과목, 칭호)로 교사를 만들고 담임반을 생성한다.
-export function newGame({ name, subject, title, slotN, persona = null, world = 'real', mentor = null, delegateAll = false, openAll = false, seed = Math.floor(Math.random() * 1e9) }) {
+export function newGame({ name, subject, title, slotN, persona = null, world = 'real', mentor = null, delegateAll = false, openAll = false, sex = 'm', seed = Math.floor(Math.random() * 1e9) }) {
   const rng = makeRng(seed);
   const sub = subjectByKey(subject);
   const teacher = { ...BASE_TEACHER };
@@ -164,6 +164,7 @@ export function newGame({ name, subject, title, slotN, persona = null, world = '
   slot = slotN;
   if (mentor) state.mentor.name = mentor;
   if (openAll) state.unlockAll = true;
+  state.profile.look = { ...PLAYER_LOOK, sex, ...(sex === 'f' ? { hair: 'long' } : {}) };
   if (delegateAll) { for (const k in state.delegate) state.delegate[k] = true; state.training = autoTraining(state); }
   if (persona) applyPersona(state, persona, { start: true });
   addMessage({

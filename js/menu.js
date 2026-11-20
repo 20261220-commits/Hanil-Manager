@@ -70,10 +70,10 @@ export function renderTitle(app) {
 
 // ---------- 새로 플레이 (프로필 만들기) ----------
 
-const draft = { world: 'real', mentor: '', delegateAll: false, openAll: false, step: 1, name: '', subject: null, title: TITLES[0].name, slotN: null, confirmOverwrite: false, bio: '', traits: null, source: null, note: '', busy: false };
+const draft = { sex: 'm', world: 'real', mentor: '', delegateAll: false, openAll: false, step: 1, name: '', subject: null, title: TITLES[0].name, slotN: null, confirmOverwrite: false, bio: '', traits: null, source: null, note: '', busy: false };
 
 export function resetDraft() {
-  Object.assign(draft, { world: 'real', mentor: '', delegateAll: false, openAll: false, step: 1, name: '', subject: null, title: TITLES[0].name, slotN: null, confirmOverwrite: false, bio: '', traits: null, source: null, note: '', busy: false });
+  Object.assign(draft, { sex: 'm', world: 'real', mentor: '', delegateAll: false, openAll: false, step: 1, name: '', subject: null, title: TITLES[0].name, slotN: null, confirmOverwrite: false, bio: '', traits: null, source: null, note: '', busy: false });
 }
 
 export function renderNewGame(app) {
@@ -88,6 +88,9 @@ export function renderNewGame(app) {
       <p class="note">학생들과 교무실에서 부를 이름입니다. 1~10자.</p>
       <input class="name-input-big" id="name" maxlength="10" autocomplete="off" placeholder="예: 김한일" value="${esc(draft.name)}" aria-label="이름">
       <p class="field-error" id="name-error" hidden>이름을 1자 이상 입력해 주세요.</p>
+      <h2 class="mt">성별</h2>
+      <div class="segs" role="radiogroup" aria-label="성별">${[['m', '남자'], ['f', '여자']].map(([v, l]) => `<button type="button" class="av-chip${draft.sex === v ? ' on' : ''}" data-sex="${v}" role="radio" aria-checked="${draft.sex === v}">${l}</button>`).join('')}</div>
+      <p class="note">프로필 이미지에 쓰입니다. 얼굴·머리·옷은 게임 안 프로필 화면에서 자세히 꾸밀 수 있습니다.</p>
       <h2 class="mt">세계관</h2>
       <p class="note">규칙은 같고 학교의 모습과 용어가 바뀝니다. 플레이 중에도 프로필에서 바꿀 수 있습니다.</p>
       ${worldPicker(draft.world)}`;
@@ -159,6 +162,7 @@ export function renderNewGame(app) {
 
   const nameInput = app.querySelector('#name');
   if (nameInput) { nameInput.focus(); nameInput.addEventListener('input', () => { draft.name = nameInput.value; }); }
+  app.querySelectorAll('[data-sex]').forEach((b) => b.addEventListener('click', () => { draft.name = app.querySelector('#name')?.value ?? draft.name; draft.sex = b.dataset.sex; renderNewGame(app); }));
   app.querySelectorAll('[data-world]').forEach((b) => b.addEventListener('click', () => { draft.name = app.querySelector('#name')?.value ?? draft.name; draft.world = b.dataset.world; renderNewGame(app); }));
   app.querySelectorAll('[data-subject]').forEach((b) => b.addEventListener('click', () => { draft.subject = b.dataset.subject; renderNewGame(app); }));
   app.querySelector('#mentor')?.addEventListener('input', (e) => { draft.mentor = e.target.value; });
@@ -184,7 +188,7 @@ export function renderNewGame(app) {
     if (draft.step < 4) { draft.step += 1; renderNewGame(app); return; }
     const target = slots.find((x) => x.n === draft.slotN);
     if (target.summary && !draft.confirmOverwrite) { draft.confirmOverwrite = true; renderNewGame(app); return; }
-    newGame({ name: draft.name, subject: draft.subject, title: draft.title, slotN: draft.slotN, world: draft.world,
+    newGame({ name: draft.name, subject: draft.subject, title: draft.title, slotN: draft.slotN, world: draft.world, sex: draft.sex,
       mentor: draft.mentor.trim() || DEFAULT_MENTOR, delegateAll: draft.delegateAll, openAll: draft.openAll,
       persona: draft.traits ? { bio: draft.bio.trim(), traits: draft.traits, source: draft.source } : null });
     resetDraft();

@@ -718,3 +718,4 @@ body[data-mode="game"] .main-col { padding-bottom: 96px; }
 .av-sw { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--line); background: var(--sw); cursor: pointer; padding: 0; }
 .av-sw.on { outline: 3px solid var(--accent); outline-offset: 2px; }
 @media (max-width: 640px) { .av-editor { grid-template-columns: 1fr; } .av-preview { position: static; max-width: 180px; } .av-row { grid-template-columns: 1fr; } }
+.avatar-svg .npc-mouth { opacity: 0; }
