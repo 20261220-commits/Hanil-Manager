@@ -5,59 +5,14 @@ import { weekTodo, autoTraining } from './game/mentor.js';
 import { translate } from './world.js';
 import { FEATURES, newlyOpened } from './game/unlock.js';
 import { esc } from './ui.js';
+import { avatarSvg, MENTOR_LOOK } from './avatar.js';
 
 const TYPE_MS = 22; // 글자 하나 찍는 간격
 
 // ---------- 캐릭터 그림 (세계관마다 옷차림이 다르다) ----------
 
-export function mentorSvg(world = 'real', { talking = false } = {}) {
-  const skin = '#f2c9a5', skinDark = '#e2b28c';
-  const look = {
-    real: { cloth: '#2f4a6d', trim: '#ffffff', hair: '#3a2a20' },
-    wuxia: { cloth: '#e8e1d2', trim: '#8a3b24', hair: '#16120f' },
-    magic: { cloth: '#3b2f78', trim: '#e2b94a', hair: '#5a3a26' },
-    cyber: { cloth: '#1d2430', trim: '#3cf0ff', hair: '#2a2f3a' },
-  }[world] ?? { cloth: '#2f4a6d', trim: '#ffffff', hair: '#3a2a20' };
-  const extraBack = world === 'wuxia' ? `<circle cx="100" cy="46" r="15" fill="${look.hair}"/><line x1="78" y1="40" x2="124" y2="52" stroke="#c9a46a" stroke-width="3" stroke-linecap="round"/>` : '';
-  const body = {
-    real: `<path d="M18 240 C24 186 60 170 100 170 C140 170 176 186 182 240 Z" fill="${look.cloth}"/>
-      <path d="M82 170 L100 204 L118 170 Z" fill="#ffffff"/><path d="M96 176 L100 214 L104 176 Z" fill="#8a3b3b"/>
-      <path d="M86 172 L96 226 M114 172 L104 226" stroke="#d9a520" stroke-width="2" fill="none"/><rect x="88" y="222" width="24" height="16" rx="2" fill="#ffffff" stroke="#c9ced6"/>`,
-    wuxia: `<path d="M18 240 C24 186 60 170 100 170 C140 170 176 186 182 240 Z" fill="${look.cloth}"/>
-      <path d="M72 174 L122 240" stroke="${look.trim}" stroke-width="9"/><path d="M128 174 L96 214" stroke="${look.trim}" stroke-width="9"/>
-      <rect x="40" y="226" width="120" height="10" fill="${look.trim}" opacity=".9"/>`,
-    magic: `<path d="M14 240 C22 182 60 168 100 168 C140 168 178 182 186 240 Z" fill="${look.cloth}"/>
-      <path d="M80 170 L100 198 L120 170" fill="none" stroke="${look.trim}" stroke-width="3"/><circle cx="100" cy="200" r="6" fill="${look.trim}"/>
-      <path d="M100 194 l2 4 4 1 -3 3 1 4 -4 -2 -4 2 1 -4 -3 -3 4 -1 z" fill="#fff6d0"/>`,
-    cyber: `<path d="M18 240 C24 186 60 170 100 170 C140 170 176 186 182 240 Z" fill="${look.cloth}"/>
-      <path d="M62 184 L82 240 M138 184 L118 240" stroke="${look.trim}" stroke-width="2.5"/><path d="M84 172 L100 196 L116 172" fill="none" stroke="${look.trim}" stroke-width="2"/>
-      <circle cx="140" cy="206" r="4" fill="${look.trim}"/>`,
-  }[world] ?? '';
-  const hair = {
-    real: `<path d="M56 104 C50 60 80 46 102 48 C132 48 152 66 146 104 C140 84 124 74 100 76 C82 76 64 86 56 104 Z" fill="${look.hair}"/>`,
-    wuxia: `<path d="M56 106 C50 58 80 46 100 48 C122 48 152 60 144 106 C140 80 122 70 100 70 C80 70 62 80 56 106 Z" fill="${look.hair}"/>`,
-    magic: `<path d="M56 110 C52 76 74 64 100 64 C128 64 150 76 144 110 C138 92 122 84 100 84 C80 84 62 92 56 110 Z" fill="${look.hair}"/>`,
-    cyber: `<path d="M58 96 C56 62 82 50 104 52 C130 54 148 68 144 92 L144 80 C132 70 118 66 100 68 C82 70 66 78 58 96 Z" fill="${look.hair}"/><rect x="56" y="86" width="6" height="22" fill="${look.hair}" opacity=".4"/>`,
-  }[world] ?? '';
-  const hat = world === 'magic' ? `<path d="M64 70 L108 4 L138 70 Z" fill="${look.cloth}"/><rect x="66" y="58" width="70" height="9" fill="${look.trim}"/>
-    <ellipse cx="100" cy="70" rx="62" ry="11" fill="${look.cloth}"/><circle cx="116" cy="34" r="3" fill="#fff6d0"/>` : '';
-  const eyes = world === 'cyber'
-    ? `<rect x="58" y="98" width="84" height="18" rx="9" fill="#0d2a33"/><rect x="60" y="100" width="80" height="14" rx="7" fill="${look.trim}" opacity=".75"/>
-       <g class="npc-eyes"><rect x="78" y="104" width="12" height="5" rx="2" fill="#e8ffff"/><rect x="110" y="104" width="12" height="5" rx="2" fill="#e8ffff"/></g>`
-    : `<g class="npc-eyes"><ellipse cx="84" cy="108" rx="4" ry="5" fill="#1c2330"/><ellipse cx="116" cy="108" rx="4" ry="5" fill="#1c2330"/></g>
-       <path d="M76 96 Q84 92 92 96 M108 96 Q116 92 124 96" stroke="${look.hair}" stroke-width="3" fill="none" stroke-linecap="round"/>
-       ${world === 'real' || world === 'magic' ? '<g fill="none" stroke="#1c2330" stroke-width="2"><circle cx="84" cy="108" r="12"/><circle cx="116" cy="108" r="12"/><path d="M96 107 L104 107"/></g>' : ''}`;
-  return `<svg class="npc-svg${talking ? ' talking' : ''}" viewBox="0 0 200 240" role="img" aria-label="선배 교사">
-    ${extraBack}
-    ${body}
-    <rect x="88" y="140" width="24" height="34" rx="8" fill="${skinDark}"/>
-    <ellipse cx="58" cy="110" rx="7" ry="10" fill="${skinDark}"/><ellipse cx="142" cy="110" rx="7" ry="10" fill="${skinDark}"/>
-    <ellipse cx="100" cy="106" rx="42" ry="48" fill="${skin}"/>
-    ${hair}${hat}${eyes}
-    <circle cx="76" cy="124" r="6" fill="#e88a7a" opacity=".3"/><circle cx="124" cy="124" r="6" fill="#e88a7a" opacity=".3"/>
-    <path class="npc-smile" d="M88 132 Q100 141 112 132" stroke="#8a3b3b" stroke-width="3" fill="none" stroke-linecap="round"/>
-    <ellipse class="npc-mouth" cx="100" cy="135" rx="7" ry="5" fill="#8a3b3b"/>
-  </svg>`;
+export function mentorSvg(world = 'real', look = getState()?.mentor?.look) {
+  return avatarSvg(look ?? MENTOR_LOOK, world, { cls: 'npc-svg', label: '선배 교사' });
 }
 
 // ---------- 대사 ----------
@@ -159,8 +114,9 @@ export function mountMentor(hash) {
     dock.addEventListener('click', () => showMentor(mentorLines(getState())));
     document.body.appendChild(dock);
   }
-  if (dock.dataset.world !== s.world || dock.dataset.name !== s.mentor.name) {
-    dock.dataset.world = s.world; dock.dataset.name = s.mentor.name;
+  const sig = `${s.world}|${s.mentor.name}|${JSON.stringify(s.mentor.look)}`;
+  if (dock.dataset.sig !== sig) {
+    dock.dataset.sig = sig;
     dock.innerHTML = `${mentorSvg(s.world)}<span class="npc-dock-label">${esc(s.mentor.name)}</span>`;
     dock.setAttribute('aria-label', `${s.mentor.name} 선생님에게 이번 주 할 일 듣기`);
   }

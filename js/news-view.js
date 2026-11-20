@@ -8,6 +8,7 @@ import { postsOwned } from './game/politics.js';
 import { goalProgress } from './game/campaign.js';
 import { notify } from './chrome.js';
 import { esc, moralePill } from './ui.js';
+import { avatarSvg } from './avatar.js';
 import { HOMEROOM_ID } from './content/factions.js';
 import { STATS, STAT_LABEL } from './content/stats.js';
 
@@ -81,7 +82,7 @@ function teacherCard(s) {
   const home = classById(s, HOMEROOM_ID);
   const owned = s.school.classes.filter((c) => c.owner === 'player').length;
   return `<aside class="news-side">
-    <div class="news-portrait"><span class="avatar">${initial(s.profile.name)}</span></div>
+    <div class="news-portrait"><span class="avatar av">${avatarSvg(s.profile.look, s.world, { crop: true, label: s.profile.name })}</span></div>
     <div class="news-role">담임 교사</div>
     <p class="news-sub">${esc(s.profile.title)} ${esc(s.profile.name)} 선생님</p>
     <dl class="news-kv">

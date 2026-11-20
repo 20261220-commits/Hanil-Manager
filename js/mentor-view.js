@@ -3,6 +3,7 @@ import { getState, save } from './game/state.js';
 import { weekTodo, DELEGATES, setMentorName, setDelegate, autoTraining } from './game/mentor.js';
 import { mentorSvg, showMentor, mentorLines } from './mentor-npc.js';
 import { notify } from './chrome.js';
+import { avatarEditor, bindAvatarEditor, MENTOR_LOOK } from './avatar.js';
 import { FEATURES, isOpen, openAll } from './game/unlock.js';
 import { esc } from './ui.js';
 
@@ -44,12 +45,17 @@ export function renderMentor(app) {
           <span class="note">${isOpen(s, k) ? '열림' : `잠김 · ${f.how}`}</span></li>`).join('')}</ul>
       </section>
       <section class="panel">
+        <h2>선배 모습 <span class="note">고르면 바로 바뀝니다</span></h2>
+        ${avatarEditor(mt.look, s.world, 'av-mentor')}
+      </section>
+      <section class="panel">
         <h2>선배 이름</h2>
         <div class="row"><label class="field grow"><span>이름 (1~10자)</span><input id="mentor-name" maxlength="10" autocomplete="off" value="${esc(mt.name)}"></label>
           <button type="button" class="btn" id="mentor-save">이름 바꾸기</button></div>
       </section>
     </div>`;
   app.querySelector('#open-all')?.addEventListener('click', () => notify(openAll()));
+  bindAvatarEditor(app.querySelector('#av-mentor'), mt.look, s.world, MENTOR_LOOK, (look) => { mt.look = look; save(); window.dispatchEvent(new CustomEvent('game:changed')); });
   app.querySelector('#listen').addEventListener('click', () => showMentor(mentorLines(s)));
   app.querySelector('#auto-pop').addEventListener('change', (e) => { mt.auto = e.target.checked; save(); });
   app.querySelector('#mentor-save').addEventListener('click', () => notify(setMentorName(app.querySelector('#mentor-name').value)));

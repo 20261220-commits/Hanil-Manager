@@ -3,6 +3,7 @@ import { getState, setTitle, setWorldOf } from './game/state.js';
 import { setWorld } from './world.js';
 import { WORLDS } from './content/worlds.js';
 import { worldPicker } from './menu.js';
+import { avatarSvg, avatarEditor, bindAvatarEditor, PLAYER_LOOK } from './avatar.js';
 import { subjectByKey } from './content/subjects.js';
 import { TITLES } from './content/titles.js';
 import { notify, toast } from './chrome.js';
@@ -36,9 +37,10 @@ export function renderProfile(app) {
           : '<p class="note">자기소개를 쓰면 교사 특성(장점과 약점)과 그 성격에 맞는 이벤트가 생깁니다.</p>'}
       </section>`;
   app.innerHTML = `
-    <div class="bhead"><div><span class="badge">${esc(s.className)} 담임</span><h1>${esc(p.title)} ${esc(p.name)} 선생님</h1></div></div>
+    <div class="bhead"><div class="row"><span class="head-av">${avatarSvg(p.look, s.world, { crop: true, label: p.name })}</span><div><span class="badge">${esc(s.className)} 담임</span><h1>${esc(p.title)} ${esc(p.name)} 선생님</h1></div></div></div>
     <div class="layout">
       <div class="side-stack">
+      <section class="panel"><h2>프로필 이미지 <span class="note">고르면 바로 바뀝니다</span></h2>${avatarEditor(p.look, s.world, 'av-me')}</section>
       ${personaPanel}
       <section class="panel">
         <h2>칭호 <span class="note">얻은 칭호 ${p.titles.length} / ${TITLES.length}</span></h2>
@@ -75,6 +77,7 @@ export function renderProfile(app) {
     notify({ ok: true, msg: `칭호를 "${r.value}"(으)로 바꿨습니다.` });
   }));
   const rerender = () => renderProfile(app);
+  bindAvatarEditor(app.querySelector('#av-me'), p.look, s.world, PLAYER_LOOK, (look) => { p.look = look; save(); window.dispatchEvent(new CustomEvent('game:changed')); });
   app.querySelectorAll('[data-world]').forEach((b) => b.addEventListener('click', () => { setWorldOf(b.dataset.world); setWorld(b.dataset.world); rerender(); toast(`세계관: ${WORLDS[b.dataset.world].name}`); }));
   app.querySelector('#edit-bio')?.addEventListener('click', () => {
     edit = { bio: per?.bio ?? '', traits: null, source: null, note: '', busy: false };

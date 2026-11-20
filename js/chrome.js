@@ -1,4 +1,6 @@
 // 화면 위쪽 게임 바(주차·AP·피로·예산·신임·다음 주로)와 알림
+import { avatarSvg } from './avatar.js';
+import { esc } from './ui.js';
 import { FEATURE_KEYS, isOpen } from './game/unlock.js';
 import { getState, unreadCount } from './game/state.js';
 import { endWeek } from './game/turn.js';
@@ -47,7 +49,7 @@ export function renderGamebar() {
     else location.hash = 'news';
   });
 
-  document.getElementById('who').textContent = `${s.profile.title} ${s.profile.name} 선생님`;
+  document.getElementById('who').innerHTML = `<span class="who-av">${avatarSvg(s.profile.look, s.world, { crop: true, label: '' })}</span>${esc(`${s.profile.title} ${s.profile.name} 선생님`)}`;
 
   // 반장 선거 메뉴는 선거 기간에만, 시험 메뉴는 시험 주에 강조
   const el = document.getElementById('nav-election');

@@ -14,6 +14,7 @@ import { ensureRoutes } from './routes.js';
 import { ensureNation } from './nation.js';
 import { ensureMentor, mentorIntro, autoTraining } from './mentor.js';
 import { ensureUnlock } from './unlock.js';
+import { PLAYER_LOOK, MENTOR_LOOK } from '../avatar.js';
 import { ensureGoal } from './campaign.js';
 import { rollBody } from './physique.js';
 
@@ -63,6 +64,8 @@ function upgrade(s) {
   s.world ??= 'real'; // 세계관 팩 (화면 용어만 바뀜)
   ensureMentor(s); // 선배 교사와 위임
   ensureUnlock(s); // 기능 단계적으로 열기
+  s.profile.look ??= { ...PLAYER_LOOK }; // 프로필 이미지
+  s.mentor.look ??= { ...MENTOR_LOOK };
   for (const st of s.students) if (!st.h || !st.w) Object.assign(st, rollBody(st)); // 키·몸무게
   s.apMax = apMaxFor(s);
   s.duel ??= null;
