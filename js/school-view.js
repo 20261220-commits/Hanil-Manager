@@ -7,6 +7,7 @@ import { threat } from './game/ai.js';
 import { PLACE_KIND, HOW_TO_TAKE } from './content/places.js';
 import { FACTIONS, FACTION_KEYS, HOMEROOM_ID, classLabel } from './content/factions.js';
 import { esc } from './ui.js';
+import { isOpen } from './game/unlock.js';
 
 export const factionChip = (k, text) => `<span class="fchip f-${k}"><i aria-hidden="true"></i>${esc(text ?? FACTIONS[k].name)}</span>`;
 
@@ -56,8 +57,8 @@ export function renderSchool(app) {
       <p class="sup-line"><span>우리 <b>${Math.round(c.support.player)}%</b> ${delta}</span><span class="note">1위 ${FACTIONS[top].short} ${Math.round(c.support[top])}%</span></p>
       ${tags ? `<div class="chips">${tags}</div>` : ''}
       ${c.id === HOMEROOM_ID ? '<a class="btn small" href="#class">담임반 보기</a>'
-        : c.owner === 'player' ? `<span class="note">우리가 점령한 반입니다. 지지도를 50% 이상으로 지켜 주세요.</span><a class="btn small" href="#ops-${c.id}">공작</a>`
-          : `<div class="row">${block ? `<span class="note">${esc(block)}</span>` : (s.school.preps?.[c.id] ? `<a class="btn small primary" href="#duel-${c.id}">행사 준비 (${Math.max(0, s.school.preps[c.id].due - s.turn)}주 남음)</a>` : `<a class="btn small primary" href="#duel-${c.id}">대결 신청 (${DUEL_AP} AP)</a>`)}<a class="btn small" href="#ops-${c.id}">공작${(s.school.recruits?.[c.id]?.length) ? ` · 우리 편 ${s.school.recruits[c.id].length}명` : ''}</a></div>`}
+        : c.owner === 'player' ? `<span class="note">우리가 점령한 반입니다. 지지도를 50% 이상으로 지켜 주세요.</span>${isOpen(s, 'ops') ? `<a class="btn small" href="#ops-${c.id}">공작</a>` : ''}`
+          : `<div class="row">${block ? `<span class="note">${esc(block)}</span>` : (s.school.preps?.[c.id] ? `<a class="btn small primary" href="#duel-${c.id}">행사 준비 (${Math.max(0, s.school.preps[c.id].due - s.turn)}주 남음)</a>` : `<a class="btn small primary" href="#duel-${c.id}">대결 신청 (${DUEL_AP} AP)</a>`)}${isOpen(s, 'ops') ? `<a class="btn small" href="#ops-${c.id}">공작${(s.school.recruits?.[c.id]?.length) ? ` · 우리 편 ${s.school.recruits[c.id].length}명` : ''}</a>` : ''}</div>`}
     </article>`;
   };
 

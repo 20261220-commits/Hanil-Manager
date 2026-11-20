@@ -3,6 +3,7 @@
 import { getState, save } from './game/state.js';
 import { weekTodo, autoTraining } from './game/mentor.js';
 import { translate } from './world.js';
+import { FEATURES, newlyOpened } from './game/unlock.js';
 import { esc } from './ui.js';
 
 const TYPE_MS = 22; // 글자 하나 찍는 간격
@@ -68,9 +69,11 @@ export function mentorLines(s, { intro = false } = {}) {
     lines.push({ text: `안녕하세요, 옆자리 선배 교사 ${mt.name}입니다. 모르는 건 저한테 물어보세요.` });
     lines.push({ text: '매주 이렇게 나와서 이번 주에 할 일을 알려 드릴게요. 해내면 제가 커피값으로 1건에 1만원씩 드립니다.' });
     lines.push({ text: '훈련 일정, 교무회의 표결, 반 편성, 대결 명단이 번거로우면 왼쪽 "멘토" 칸에서 저한테 맡기셔도 돼요.' });
+    if (!s.unlockAll) lines.push({ text: '처음엔 메뉴가 몇 개뿐이에요. 담임반 아이들부터 챙기시면, 때가 될 때마다 새 기능을 하나씩 열어 드릴게요.' });
   } else {
     lines.push({ text: `${s.weekLabel.split(' (')[0]}예요. ${mt.last ? (mt.last.done ? `지난주 할 일 ${mt.last.total}개 중 ${mt.last.done}개 해내셨네요. 커피값 ${mt.last.done}만원 넣어 뒀어요.` : '지난주 할 일은 못 하셨네요. 이번 주엔 같이 해 봐요.') : '이번 주도 힘내 봐요.'}` });
   }
+  for (const k of newlyOpened(s)) FEATURES[k].intro.forEach((text, i, all) => lines.push({ text, href: i === all.length - 1 ? FEATURES[k].href : null, go: '보러 가기' }));
   const todo = weekTodo(s);
   todo.forEach((t, i) => lines.push({ text: `${todo.length > 1 ? `${i + 1}번째. ` : ''}${t.text}. ${t.why}`, href: t.done ? null : t.href, done: t.done }));
   if (!todo.length) lines.push({ text: '이번 주는 특별히 챙길 일이 없어요. 하고 싶은 걸 해 보세요.' });
@@ -120,7 +123,7 @@ export function showMentor(lines) {
     st.full = translate(line.text); st.n = 0; text.textContent = '';
     step.textContent = `${i + 1} / ${lines.length}`;
     next.textContent = i === lines.length - 1 ? '닫기' : '다음 ▶';
-    go.hidden = !line.href; if (line.href) go.href = line.href;
+    go.hidden = !line.href; if (line.href) { go.href = line.href; go.textContent = line.go ?? '하러 가기'; }
     svg.classList.add('talking');
     clearInterval(open.timer);
     open.timer = setInterval(() => {

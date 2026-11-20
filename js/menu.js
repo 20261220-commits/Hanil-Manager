@@ -70,10 +70,10 @@ export function renderTitle(app) {
 
 // ---------- 새로 플레이 (프로필 만들기) ----------
 
-const draft = { world: 'real', mentor: '', delegateAll: false, step: 1, name: '', subject: null, title: TITLES[0].name, slotN: null, confirmOverwrite: false, bio: '', traits: null, source: null, note: '', busy: false };
+const draft = { world: 'real', mentor: '', delegateAll: false, openAll: false, step: 1, name: '', subject: null, title: TITLES[0].name, slotN: null, confirmOverwrite: false, bio: '', traits: null, source: null, note: '', busy: false };
 
 export function resetDraft() {
-  Object.assign(draft, { world: 'real', mentor: '', delegateAll: false, step: 1, name: '', subject: null, title: TITLES[0].name, slotN: null, confirmOverwrite: false, bio: '', traits: null, source: null, note: '', busy: false });
+  Object.assign(draft, { world: 'real', mentor: '', delegateAll: false, openAll: false, step: 1, name: '', subject: null, title: TITLES[0].name, slotN: null, confirmOverwrite: false, bio: '', traits: null, source: null, note: '', busy: false });
 }
 
 export function renderNewGame(app) {
@@ -126,6 +126,8 @@ export function renderNewGame(app) {
       <input class="name-input" id="mentor" maxlength="10" autocomplete="off" placeholder="예: ${DEFAULT_MENTOR}" value="${esc(draft.mentor)}" aria-label="선배 교사 이름">
       <label class="deleg"><input type="checkbox" id="deleg-all" ${draft.delegateAll ? 'checked' : ''}><b>처음이에요: 선배에게 다 맡기기</b>
         <span class="note">훈련 일정, 교무회의 표결, 반 편성, 대결 명단·전술을 선배가 정합니다. 나중에 왼쪽 "멘토" 칸에서 하나씩 끌 수 있습니다.</span></label>
+      <label class="deleg"><input type="checkbox" id="open-all" ${draft.openAll ? 'checked' : ''}><b>게임에 익숙해요: 모든 기능을 처음부터 열기</b>
+        <span class="note">끄면 처음엔 기본 메뉴만 보이고, 교내 판도·교무실·시험·공작·특수 루트가 때가 되면 하나씩 열립니다.</span></label>
 
       <h2>저장 칸</h2>
       <div class="slot-pick" role="radiogroup" aria-label="저장 칸">${slots.map((x) => `
@@ -160,6 +162,7 @@ export function renderNewGame(app) {
   app.querySelectorAll('[data-world]').forEach((b) => b.addEventListener('click', () => { draft.name = app.querySelector('#name')?.value ?? draft.name; draft.world = b.dataset.world; renderNewGame(app); }));
   app.querySelectorAll('[data-subject]').forEach((b) => b.addEventListener('click', () => { draft.subject = b.dataset.subject; renderNewGame(app); }));
   app.querySelector('#mentor')?.addEventListener('input', (e) => { draft.mentor = e.target.value; });
+  app.querySelector('#open-all')?.addEventListener('change', (e) => { draft.openAll = e.target.checked; });
   app.querySelector('#deleg-all')?.addEventListener('change', (e) => { draft.delegateAll = e.target.checked; });
   app.querySelectorAll('[data-slot]').forEach((b) => b.addEventListener('click', () => { draft.slotN = +b.dataset.slot; draft.confirmOverwrite = false; renderNewGame(app); }));
   bindBioEditor(app, draft, () => renderNewGame(app), { name: draft.name, subject: SUBJECTS.find((x) => x.key === draft.subject)?.name ?? '' });
@@ -182,7 +185,7 @@ export function renderNewGame(app) {
     const target = slots.find((x) => x.n === draft.slotN);
     if (target.summary && !draft.confirmOverwrite) { draft.confirmOverwrite = true; renderNewGame(app); return; }
     newGame({ name: draft.name, subject: draft.subject, title: draft.title, slotN: draft.slotN, world: draft.world,
-      mentor: draft.mentor.trim() || DEFAULT_MENTOR, delegateAll: draft.delegateAll,
+      mentor: draft.mentor.trim() || DEFAULT_MENTOR, delegateAll: draft.delegateAll, openAll: draft.openAll,
       persona: draft.traits ? { bio: draft.bio.trim(), traits: draft.traits, source: draft.source } : null });
     resetDraft();
     location.hash = 'news';

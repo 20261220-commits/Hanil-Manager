@@ -11,6 +11,7 @@ import { challengeBlock, target } from './duel.js';
 import { MORALE } from '../content/stats.js';
 import { classLabel } from '../content/factions.js';
 import { electionOpen } from './election.js';
+import { isOpen } from './unlock.js';
 
 export const DEFAULT_MENTOR = '오세진';
 export const DELEGATES = {
@@ -90,7 +91,7 @@ function candidates(s) {
   const near = s.school.classes.filter((c) => c.owner !== 'player' && c.support.player >= 38)
     .map((c) => ({ c, t: target(s, c.id) })).filter((x) => x.t && !challengeBlock(s, x.t))
     .sort((a, b) => b.c.support.player - a.c.support.player)[0];
-  if (near) {
+  if (near && isOpen(s, 'school')) {
     const r = near.c.record;
     out.push({ kind: 'duel', ref: near.c.id, base: r.w + r.l + r.d, href: `#duel-${near.c.id}`, text: `${classLabel(near.c.id)}에 대결 걸기`,
       why: `우리 지지도 ${Math.round(near.c.support.player)}%라 이기면 점령할 수 있습니다.` });
@@ -106,7 +107,7 @@ function candidates(s) {
   // 6. 반장 선거·반 편성 같은 시기 일
   if (electionOpen(s)) out.push({ kind: 'visit', ref: 'election', href: '#election', text: '반장 선거 살펴보기', why: '곧 우리 반 반장을 뽑습니다. 후보와 선거 운동을 미리 살펴보세요.' });
   // 7. 교무회의 안건 (반 2개 이상일 때)
-  if (!s.school.agenda && s.school.classes.filter((c) => c.owner === 'player').length >= 2 && s.turn >= 5) out.push({ kind: 'agenda', href: '#office', text: '교무회의에 우리 안건 올리기', why: '이번 달 회의에서 특별실이나 규칙을 가져올 수 있습니다.' });
+  if (!s.school.agenda && s.school.classes.filter((c) => c.owner === 'player').length >= 2 && s.turn >= 5 && isOpen(s, 'office')) out.push({ kind: 'agenda', href: '#office', text: '교무회의에 우리 안건 올리기', why: '이번 달 회의에서 특별실이나 규칙을 가져올 수 있습니다.' });
   // 8. 기본: 담임반 아이들 훈련 집중
   if (s.fatigue < 60) out.push({ kind: 'spendAp', href: '#class', text: 'AP를 모두 쓰기', why: '상담·집중 훈련·관찰로 담임반을 키우세요.' });
   return out.slice(0, 3);

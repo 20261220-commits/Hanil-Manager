@@ -3,6 +3,7 @@ import { getState, save } from './game/state.js';
 import { weekTodo, DELEGATES, setMentorName, setDelegate, autoTraining } from './game/mentor.js';
 import { mentorSvg, showMentor, mentorLines } from './mentor-npc.js';
 import { notify } from './chrome.js';
+import { FEATURES, isOpen, openAll } from './game/unlock.js';
 import { esc } from './ui.js';
 
 export function renderMentor(app) {
@@ -37,11 +38,18 @@ export function renderMentor(app) {
         <div class="deleg-list">${Object.entries(DELEGATES).map(([k, d]) => `<label class="deleg"><input type="checkbox" data-deleg="${k}" ${s.delegate[k] ? 'checked' : ''}><b>${d.name}</b><span class="note">${d.desc}</span></label>`).join('')}</div>
       </section>
       <section class="panel">
+        <div class="row between"><h2>기능 열기 <span class="note">때가 되면 선배가 하나씩 소개하며 엽니다</span></h2>
+          ${Object.keys(FEATURES).every((k) => isOpen(s, k)) ? '' : '<button type="button" class="btn small" id="open-all">모든 기능 바로 열기</button>'}</div>
+        <ul class="feat-list">${Object.entries(FEATURES).map(([k, f]) => `<li class="${isOpen(s, k) ? 'on' : ''}"><b>${f.name}</b>
+          <span class="note">${isOpen(s, k) ? '열림' : `잠김 · ${f.how}`}</span></li>`).join('')}</ul>
+      </section>
+      <section class="panel">
         <h2>선배 이름</h2>
         <div class="row"><label class="field grow"><span>이름 (1~10자)</span><input id="mentor-name" maxlength="10" autocomplete="off" value="${esc(mt.name)}"></label>
           <button type="button" class="btn" id="mentor-save">이름 바꾸기</button></div>
       </section>
     </div>`;
+  app.querySelector('#open-all')?.addEventListener('click', () => notify(openAll()));
   app.querySelector('#listen').addEventListener('click', () => showMentor(mentorLines(s)));
   app.querySelector('#auto-pop').addEventListener('change', (e) => { mt.auto = e.target.checked; save(); });
   app.querySelector('#mentor-save').addEventListener('click', () => notify(setMentorName(app.querySelector('#mentor-name').value)));

@@ -13,6 +13,7 @@ import { ensureElection } from './election.js';
 import { ensureRoutes } from './routes.js';
 import { ensureNation } from './nation.js';
 import { ensureMentor, mentorIntro, autoTraining } from './mentor.js';
+import { ensureUnlock } from './unlock.js';
 import { ensureGoal } from './campaign.js';
 import { rollBody } from './physique.js';
 
@@ -61,6 +62,7 @@ function upgrade(s) {
   ensureNation(s); // 2막 전국 정복
   s.world ??= 'real'; // 세계관 팩 (화면 용어만 바뀜)
   ensureMentor(s); // 선배 교사와 위임
+  ensureUnlock(s); // 기능 단계적으로 열기
   for (const st of s.students) if (!st.h || !st.w) Object.assign(st, rollBody(st)); // 키·몸무게
   s.apMax = apMaxFor(s);
   s.duel ??= null;
@@ -139,7 +141,7 @@ export const currentSlot = () => slot;
 export function quitToTitle() { save(); state = null; slot = null; }
 
 // 새 게임: 프로필(이름, 과목, 칭호)로 교사를 만들고 담임반을 생성한다.
-export function newGame({ name, subject, title, slotN, persona = null, world = 'real', mentor = null, delegateAll = false, seed = Math.floor(Math.random() * 1e9) }) {
+export function newGame({ name, subject, title, slotN, persona = null, world = 'real', mentor = null, delegateAll = false, openAll = false, seed = Math.floor(Math.random() * 1e9) }) {
   const rng = makeRng(seed);
   const sub = subjectByKey(subject);
   const teacher = { ...BASE_TEACHER };
@@ -158,6 +160,7 @@ export function newGame({ name, subject, title, slotN, persona = null, world = '
   });
   slot = slotN;
   if (mentor) state.mentor.name = mentor;
+  if (openAll) state.unlockAll = true;
   if (delegateAll) { for (const k in state.delegate) state.delegate[k] = true; state.training = autoTraining(state); }
   if (persona) applyPersona(state, persona, { start: true });
   addMessage({

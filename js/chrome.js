@@ -1,4 +1,5 @@
 // 화면 위쪽 게임 바(주차·AP·피로·예산·신임·다음 주로)와 알림
+import { FEATURE_KEYS, isOpen } from './game/unlock.js';
 import { getState, unreadCount } from './game/state.js';
 import { endWeek } from './game/turn.js';
 import { deliverPersonaEvent } from './game/persona.js';
@@ -53,6 +54,7 @@ export function renderGamebar() {
   if (el) el.hidden = !electionOpen(s);
   const ex = document.querySelector('.sidenav a[data-section="exam"]');
   if (ex) ex.classList.toggle('hot', isExamWeek(s, ensureExam(s)));
+  for (const k of FEATURE_KEYS) { const a = document.querySelector(`.sidenav a[data-section="${k}"]`); if (a) { a.hidden = !isOpen(s, k); a.classList.toggle('is-new', !s.unlockAll && s.turn > 1 && s.unlocked?.[k] === s.turn); } }
   const naNav = document.getElementById('nav-nation');
   if (naNav) naNav.hidden = !s.act2;
   const mtNav = document.getElementById('nav-meeting');

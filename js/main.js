@@ -21,6 +21,7 @@ import { renderNation } from './nation-view.js';
 import { setWorld } from './world.js';
 import { renderMentor } from './mentor-view.js';
 import { mountMentor, hideMentor } from './mentor-npc.js';
+import { FEATURES, featureOfHash, isOpen } from './game/unlock.js';
 import { renderNews } from './news-view.js';
 import { renderEnding } from './ending-view.js';
 import { getState } from './game/state.js';
@@ -65,7 +66,9 @@ async function route({ keepScroll = false } = {}) {
     // 게임 안 화면
     document.body.dataset.mode = 'game';
     let crumbs;
-    if (hash.startsWith('b-')) crumbs = await renderBuilding(app, hash.slice(2));
+    const feat = featureOfHash(hash);
+    if (feat && !isOpen(getState(), feat)) crumbs = renderLocked(app, feat);
+    else if (hash.startsWith('b-')) crumbs = await renderBuilding(app, hash.slice(2));
     else if (hash === 'class') crumbs = renderHomeroom(app);
     else if (hash.startsWith('s-')) crumbs = renderStudent(app, hash.slice(2));
     else if (hash === 'school') crumbs = renderSchool(app);
@@ -113,3 +116,12 @@ async function boot() {
 }
 
 boot();
+
+// 아직 열리지 않은 기능
+function renderLocked(app, key) {
+  const f = FEATURES[key];
+  app.innerHTML = `<div class="panel empty"><h1>${f.name}: 아직 열리지 않았습니다</h1>
+    <p class="muted">${f.how} 열리면 선배 교사가 알려 드립니다.</p>
+    <div class="row"><a class="btn primary" href="#mentor">멘토 칸으로</a><a class="btn" href="#news">소식으로</a></div></div>`;
+  return [{ label: f.name }];
+}
